@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI衣搭</string>
+    <string name="login">登录</string>
+    <string name="register">注册</string>
+    <string name="welcome">欢迎使用AI衣搭</string>
+</resources> 

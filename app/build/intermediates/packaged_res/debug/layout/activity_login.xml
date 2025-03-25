@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".LoginActivity">
+
+    <!-- 视差背景容器 -->
+    <FrameLayout
+        android:id="@+id/parallax_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- 背景 - 最底层 -->
+        <View
+            android:id="@+id/background_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/gradient_day_background" />
+
+        <!-- 远处的云 - 慢速移动 -->
+        <ImageView
+            android:id="@+id/far_clouds"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginTop="50dp"
+            android:adjustViewBounds="true"
+            android:alpha="0.7"
+            android:scaleType="fitXY"
+            android:src="@drawable/far_clouds" />
+
+        <!-- 太阳/月亮容器 -->
+        <FrameLayout
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="100dp">
+
+            <!-- 太阳 -->
+            <ImageView
+                android:id="@+id/sun_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/sun" />
+
+            <!-- 月亮 - 初始隐藏 -->
+            <ImageView
+                android:id="@+id/moon_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:alpha="0"
+                android:src="@drawable/moon" />
+        </FrameLayout>
+
+        <!-- 近处的云 - 快速移动 -->
+        <ImageView
+            android:id="@+id/near_clouds"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginTop="150dp"
+            android:adjustViewBounds="true"
+            android:scaleType="fitXY"
+            android:src="@drawable/near_clouds" />
+
+        <!-- 高斯模糊覆盖层 - 初始透明 -->
+        <View
+            android:id="@+id/blur_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0"
+            android:background="@drawable/blur_overlay" />
+    </FrameLayout>
+
+    <!-- 登录表单容器 -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        app:cardBackgroundColor="#F5FFFFFF"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.65">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <!-- 应用标题 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="AI衣搭"
+                android:textColor="@color/colorPrimary"
+                android:textSize="32sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="智能穿搭，轻松时尚"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="14sp"
+                android:layout_marginBottom="28dp" />
+
+            <!-- 用户名输入 -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/username_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:startIconDrawable="@drawable/ic_person"
+                app:startIconTint="@color/colorPrimary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/username_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="用户名"
+                    android:inputType="text"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- 密码输入 -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/password_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="28dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:endIconMode="password_toggle"
+                app:endIconTint="@color/colorPrimary"
+                app:startIconDrawable="@drawable/ic_lock"
+                app:startIconTint="@color/colorPrimary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/password_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="密码"
+                    android:inputType="textPassword"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- 登录按钮 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/login_button"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="登录"
+                android:textSize="16sp"
+                android:backgroundTint="@color/colorPrimary"
+                app:cornerRadius="28dp" />
+
+            <!-- 注册链接 -->
+            <TextView
+                android:id="@+id/register_link"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center"
+                android:text="没有账号？立即注册"
+                android:textColor="@color/colorAccent" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- 底部品牌标识 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="AI衣搭 © 2025"
+        android:textColor="#FFFFFF"
+        android:alpha="0.8"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+

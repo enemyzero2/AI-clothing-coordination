@@ -1,0 +1,39 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M60,60m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M60,60m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0" />
+    <!-- 太阳光芒 -->
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M60,10L65,25L55,25Z" />
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M60,110L65,95L55,95Z" />
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M10,60L25,65L25,55Z" />
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M110,60L95,65L95,55Z" />
+    <!-- 对角线光芒 -->
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M26,26L36,36L33,33Z" />
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M94,94L84,84L87,87Z" />
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M26,94L36,84L33,87Z" />
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M94,26L84,36L87,33Z" />
+</vector>
+
