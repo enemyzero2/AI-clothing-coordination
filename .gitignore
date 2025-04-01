@@ -25,3 +25,85 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Android应用程序构建输出目录
+*.apk
+*.ap_
+*.aab
+
+# Java类文件
+*.class
+
+# 日志文件
+*.log
+
+# Gradle构建目录
+.gradle/
+build/
+app/build/
+
+# 本地配置文件（SDK路径等）
+local.properties
+
+# Android Studio生成的文件
+.idea/
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/codeStyles/
+
+# Keystore文件
+*.jks
+*.keystore
+*.p12
+
+# 外部生成的文件
+.externalNativeBuild/
+.cxx/
+captures/
+
+# Google服务（例如Firebase）
+google-services.json
+
+# Proguard相关文件
+proguard/
+*.pro
+
+# MacOS文件
+.DS_Store
+.DS_Store?
+
+# Windows文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux文件
+*~
+
+# 项目特定的忽略文件
+app/release/
+app/debug/
+app/src/debug/res/
+
+# Gradle包装器JAR文件（保留脚本）
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio导航编辑器临时文件
+.navigation/
+
+# NDK
+obj/
+
+# 版本控制
+vcs.xml
+
+# Android生命周期扩展
+/lifecycleextensions/
