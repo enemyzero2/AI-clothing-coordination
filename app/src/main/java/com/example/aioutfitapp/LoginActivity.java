@@ -30,6 +30,9 @@ import com.google.android.material.textfield.TextInputLayout;
 import eightbitlab.com.blurview.BlurView;
 import eightbitlab.com.blurview.RenderScriptBlur;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 登录页面活动
  * 
@@ -57,6 +60,7 @@ public class LoginActivity extends AppCompatActivity {
     private boolean isNightMode = false;
     private float parallaxScrollX = 0f;
     private AnimatorSet cloudAnimatorSet;
+    private AnimatorSet dayNightAnimatorSet;
     
     // 测试用的预设用户名和密码
     private static final String DEMO_USERNAME = "test";
@@ -84,11 +88,25 @@ public class LoginActivity extends AppCompatActivity {
         // 设置初始位置
         nearClouds.setTranslationX(0);
         farClouds.setTranslationX(0);
+        
+        // 设置初始状态为日间模式
+        setDayMode(true);
 
         // 启动云层动画
         startCloudAnimation();
 
-        // 监听密码输入
+        // 监听密码输入框焦点变化
+        passwordInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // 密码输入框获取焦点时切换到夜间模式
+                animateDayNightTransition(false);
+            } else {
+                // 密码输入框失去焦点时切换回日间模式
+                animateDayNightTransition(true);
+            }
+        });
+        
+        // 监听密码输入，清除错误提示
         passwordInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -96,10 +114,6 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // 根据密码长度计算动画进度
-                float progress = Math.min(1.0f, s.length() / 8.0f);
-                updateDayNightTransition(progress);
-                
                 // 清除密码输入框的错误消息
                 passwordLayout.setError(null);
             }
@@ -258,47 +272,149 @@ public class LoginActivity extends AppCompatActivity {
         cloudAnimatorSet.playTogether(nearCloudAnimator, farCloudAnimator);
         cloudAnimatorSet.start();
     }
-
+    
     /**
-     * 更新日夜过渡效果
-     * @param progress 过渡进度 (0.0 - 1.0)
+     * 设置日间或夜间模式（立即设置，无动画）
+     * @param isDay 是否为日间模式
      */
-    private void updateDayNightTransition(float progress) {
-        // 背景颜色过渡
-        int[] dayColors = new int[]{
+    private void setDayMode(boolean isDay) {
+        // 背景颜色设置
+        int[] colors;
+        if (isDay) {
+            colors = new int[]{
                 ContextCompat.getColor(this, android.R.color.holo_blue_light),
                 ContextCompat.getColor(this, android.R.color.holo_blue_bright)
-        };
-        int[] nightColors = new int[]{
+            };
+            
+            // 太阳/月亮显示
+            sunView.setAlpha(1f);
+            moonView.setAlpha(0f);
+            
+            // 云层显示
+            nearClouds.setAlpha(1f);
+            farClouds.setAlpha(1f);
+        } else {
+            colors = new int[]{
                 ContextCompat.getColor(this, android.R.color.holo_blue_dark),
                 ContextCompat.getColor(this, android.R.color.black)
-        };
-
-        // 计算过渡颜色
-        int[] transitionColors = new int[2];
-        for (int i = 0; i < 2; i++) {
-            transitionColors[i] = blendColors(dayColors[i], nightColors[i], progress);
+            };
+            
+            // 太阳/月亮显示
+            sunView.setAlpha(0f);
+            moonView.setAlpha(1f);
+            
+            // 云层显示
+            nearClouds.setAlpha(0.7f);
+            farClouds.setAlpha(0.5f);
         }
-
-        // 更新背景
+        
+        // 设置背景
         GradientDrawable gradientDrawable = new GradientDrawable(
-                GradientDrawable.Orientation.TL_BR, transitionColors);
+                GradientDrawable.Orientation.TL_BR, colors);
         backgroundView.setBackground(gradientDrawable);
-
-        // 太阳/月亮过渡
-        sunView.setAlpha(1 - progress);
-        moonView.setAlpha(progress);
-
-        // 旋转太阳/月亮
-        sunView.setRotation(progress * 180);
-        moonView.setRotation(progress * 180);
-
-        // 云层颜色调整
-        nearClouds.setAlpha(1 - (progress * 0.3f)); // 夜间云层稍微暗一些
-        farClouds.setAlpha(1 - (progress * 0.5f));  // 夜间远处云层更暗
-
+        
         // 更新模式状态
-        isNightMode = progress > 0.5;
+        isNightMode = !isDay;
+    }
+    
+    /**
+     * 动画过渡到日间或夜间模式
+     * @param toDay 是否过渡到日间模式
+     */
+    private void animateDayNightTransition(boolean toDay) {
+        // 取消正在进行的动画
+        if (dayNightAnimatorSet != null && dayNightAnimatorSet.isRunning()) {
+            dayNightAnimatorSet.cancel();
+        }
+        
+        // 创建动画集
+        dayNightAnimatorSet = new AnimatorSet();
+        List<Animator> animators = new ArrayList<>();
+        
+        // 背景色动画
+        int[] startColors;
+        int[] endColors;
+        
+        if (toDay) {
+            // 夜间到日间
+            startColors = new int[]{
+                ContextCompat.getColor(this, android.R.color.holo_blue_dark),
+                ContextCompat.getColor(this, android.R.color.black)
+            };
+            endColors = new int[]{
+                ContextCompat.getColor(this, android.R.color.holo_blue_light),
+                ContextCompat.getColor(this, android.R.color.holo_blue_bright)
+            };
+            
+            // 太阳/月亮渐变
+            animators.add(ObjectAnimator.ofFloat(sunView, "alpha", 0f, 1f));
+            animators.add(ObjectAnimator.ofFloat(moonView, "alpha", 1f, 0f));
+            
+            // 太阳/月亮旋转
+            animators.add(ObjectAnimator.ofFloat(sunView, "rotation", 180f, 0f));
+            animators.add(ObjectAnimator.ofFloat(moonView, "rotation", 0f, -180f));
+            
+            // 云层透明度
+            animators.add(ObjectAnimator.ofFloat(nearClouds, "alpha", 0.7f, 1f));
+            animators.add(ObjectAnimator.ofFloat(farClouds, "alpha", 0.5f, 1f));
+        } else {
+            // 日间到夜间
+            startColors = new int[]{
+                ContextCompat.getColor(this, android.R.color.holo_blue_light),
+                ContextCompat.getColor(this, android.R.color.holo_blue_bright)
+            };
+            endColors = new int[]{
+                ContextCompat.getColor(this, android.R.color.holo_blue_dark),
+                ContextCompat.getColor(this, android.R.color.black)
+            };
+            
+            // 太阳/月亮渐变
+            animators.add(ObjectAnimator.ofFloat(sunView, "alpha", 1f, 0f));
+            animators.add(ObjectAnimator.ofFloat(moonView, "alpha", 0f, 1f));
+            
+            // 太阳/月亮旋转
+            animators.add(ObjectAnimator.ofFloat(sunView, "rotation", 0f, 180f));
+            animators.add(ObjectAnimator.ofFloat(moonView, "rotation", -180f, 0f));
+            
+            // 云层透明度
+            animators.add(ObjectAnimator.ofFloat(nearClouds, "alpha", 1f, 0.7f));
+            animators.add(ObjectAnimator.ofFloat(farClouds, "alpha", 1f, 0.5f));
+        }
+        
+        // 背景颜色动画(使用ValueAnimator)
+        ValueAnimator colorAnimator = ValueAnimator.ofFloat(0f, 1f);
+        colorAnimator.setDuration(800);
+        colorAnimator.addUpdateListener(animation -> {
+            float fraction = (float) animation.getAnimatedValue();
+            int[] transitionColors = new int[2];
+            
+            // 计算过渡颜色
+            for (int i = 0; i < 2; i++) {
+                transitionColors[i] = blendColors(startColors[i], endColors[i], fraction);
+            }
+            
+            // 更新背景
+            GradientDrawable gradientDrawable = new GradientDrawable(
+                    GradientDrawable.Orientation.TL_BR, transitionColors);
+            backgroundView.setBackground(gradientDrawable);
+        });
+        animators.add(colorAnimator);
+        
+        // 设置动画集属性
+        dayNightAnimatorSet.playTogether(animators);
+        dayNightAnimatorSet.setDuration(800);
+        dayNightAnimatorSet.setInterpolator(new AccelerateDecelerateInterpolator());
+        
+        // 更新状态
+        dayNightAnimatorSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                isNightMode = !toDay;
+            }
+        });
+        
+        // 开始动画
+        dayNightAnimatorSet.start();
     }
 
     /**
@@ -333,6 +449,9 @@ public class LoginActivity extends AppCompatActivity {
         if (cloudAnimatorSet != null) {
             cloudAnimatorSet.pause();
         }
+        if (dayNightAnimatorSet != null && dayNightAnimatorSet.isRunning()) {
+            dayNightAnimatorSet.pause();
+        }
     }
 
     @Override
@@ -344,6 +463,10 @@ public class LoginActivity extends AppCompatActivity {
         } else if (cloudAnimatorSet == null) {
             startCloudAnimation();
         }
+        
+        if (dayNightAnimatorSet != null && dayNightAnimatorSet.isPaused()) {
+            dayNightAnimatorSet.resume();
+        }
     }
 
     @Override
@@ -353,6 +476,10 @@ public class LoginActivity extends AppCompatActivity {
         if (cloudAnimatorSet != null) {
             cloudAnimatorSet.cancel();
             cloudAnimatorSet = null;
+        }
+        if (dayNightAnimatorSet != null) {
+            dayNightAnimatorSet.cancel();
+            dayNightAnimatorSet = null;
         }
     }
 }

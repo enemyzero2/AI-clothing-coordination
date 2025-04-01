@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="160dp"
+    android:layout_height="match_parent"
+    android:layout_marginEnd="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp">
+    
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        
+        <!-- 穿搭图片 -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="160dp">
+            
+            <ImageView
+                android:id="@+id/outfit_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"/>
+            
+            <!-- 日期标签 -->
+            <TextView
+                android:id="@+id/outfit_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2023-03-18"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:background="@drawable/pill_background"
+                android:layout_gravity="bottom|start"
+                android:layout_margin="8dp"/>
+        </FrameLayout>
+        
+        <!-- 穿搭标题 -->
+        <TextView
+            android:id="@+id/outfit_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="休闲周末"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"/>
+        
+    </LinearLayout>
+</androidx.cardview.widget.CardView> 

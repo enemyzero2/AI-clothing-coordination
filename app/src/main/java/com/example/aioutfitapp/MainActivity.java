@@ -1,5 +1,6 @@
 package com.example.aioutfitapp;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -85,7 +86,9 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "搭配功能即将上线", Toast.LENGTH_SHORT).show();
                     return true;
                 } else if (itemId == R.id.navigation_profile) {
-                    Toast.makeText(MainActivity.this, "个人资料功能即将上线", Toast.LENGTH_SHORT).show();
+                    // 跳转到个人主页
+                    Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                    startActivity(intent);
                     return true;
                 }
                 return false;
