@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 衣柜排序选项 -->
+    <string-array name="sort_options">
+        <item>最新添加</item>
+        <item>最早添加</item>
+        <item>名称 A-Z</item>
+        <item>名称 Z-A</item>
+        <item>收藏优先</item>
+        <item>喜爱程度</item>
+    </string-array>
+</resources> 

@@ -86,7 +86,8 @@ public class MainActivity extends AppCompatActivity {
                     // 已在主页，不需处理
                     return true;
                 } else if (itemId == R.id.navigation_wardrobe) {
-                    Toast.makeText(MainActivity.this, "衣柜功能即将上线", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(MainActivity.this, WardrobeActivity.class);
+                    startActivity(intent);
                     return true;
                 } else if (itemId == R.id.navigation_outfit) {
                     Toast.makeText(MainActivity.this, "搭配功能即将上线", Toast.LENGTH_SHORT).show();
@@ -153,7 +154,8 @@ public class MainActivity extends AppCompatActivity {
         });
         
         myWardrobeBtn.setOnClickListener(v -> {
-            Toast.makeText(this, "我的衣柜功能即将上线", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(this, WardrobeActivity.class);
+            startActivity(intent);
         });
         
         outfitSuggestionBtn.setOnClickListener(v -> {

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/clothing_card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/colorDivider"
+    app:strokeWidth="0.5dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- 服装图片 -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="160dp">
+
+            <ImageView
+                android:id="@+id/clothing_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="服装图片"
+                android:scaleType="centerCrop"
+                tools:src="@drawable/clothing_placeholder" />
+
+            <!-- 收藏图标 -->
+            <ImageView
+                android:id="@+id/favorite_icon"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:background="@drawable/circle_background"
+                android:padding="6dp"
+                android:src="@drawable/ic_favorite"
+                app:tint="@color/colorAccent" />
+
+            <!-- 类型标签 -->
+            <TextView
+                android:id="@+id/type_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_margin="8dp"
+                android:background="@drawable/rounded_label_background"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:textColor="@android:color/white"
+                android:textSize="12sp"
+                tools:text="上装" />
+        </FrameLayout>
+
+        <!-- 服装信息 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- 服装名称 -->
+            <TextView
+                android:id="@+id/clothing_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="牛仔夹克" />
+
+            <!-- 品牌 -->
+            <TextView
+                android:id="@+id/clothing_brand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="12sp"
+                tools:text="品牌: Levi's" />
+
+            <!-- 季节标签 -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/season_chip_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:chipSpacing="4dp"
+                app:singleLine="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_spring"
+                    style="@style/Widget.MaterialComponents.Chip.Action"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="春"
+                    android:textSize="10sp"
+                    app:chipBackgroundColor="@color/colorChipBackground"
+                    app:chipMinHeight="24dp"
+                    app:chipMinTouchTargetSize="24dp"
+                    app:chipStrokeColor="@color/colorDivider"
+                    app:chipStrokeWidth="0.5dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_summer"
+                    style="@style/Widget.MaterialComponents.Chip.Action"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="夏"
+                    android:textSize="10sp"
+                    app:chipBackgroundColor="@color/colorChipBackground"
+                    app:chipMinHeight="24dp"
+                    app:chipMinTouchTargetSize="24dp"
+                    app:chipStrokeColor="@color/colorDivider"
+                    app:chipStrokeWidth="0.5dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_autumn"
+                    style="@style/Widget.MaterialComponents.Chip.Action"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="秋"
+                    android:textSize="10sp"
+                    app:chipBackgroundColor="@color/colorChipBackground"
+                    app:chipMinHeight="24dp"
+                    app:chipMinTouchTargetSize="24dp"
+                    app:chipStrokeColor="@color/colorDivider"
+                    app:chipStrokeWidth="0.5dp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_winter"
+                    style="@style/Widget.MaterialComponents.Chip.Action"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="冬"
+                    android:textSize="10sp"
+                    app:chipBackgroundColor="@color/colorChipBackground"
+                    app:chipMinHeight="24dp"
+                    app:chipMinTouchTargetSize="24dp"
+                    app:chipStrokeColor="@color/colorDivider"
+                    app:chipStrokeWidth="0.5dp" />
+
+            </com.google.android.material.chip.ChipGroup>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView> 

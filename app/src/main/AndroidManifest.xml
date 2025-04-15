@@ -37,6 +37,12 @@
             android:label="穿搭社区"
             android:parentActivityName=".MainActivity" />
         
+        <activity 
+            android:name=".WardrobeActivity"
+            android:screenOrientation="portrait"
+            android:label="我的衣柜"
+            android:parentActivityName=".MainActivity" />
+        
     </application>
 
 </manifest>
