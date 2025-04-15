@@ -36,6 +36,9 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout myWardrobeBtn;
     private LinearLayout outfitSuggestionBtn;
     private LinearLayout shoppingListBtn;
+    private LinearLayout sceneMatchingBtn;
+    private LinearLayout fashionTrendsBtn;
+    private LinearLayout personalizationBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
         myWardrobeBtn = findViewById(R.id.my_wardrobe_btn);
         outfitSuggestionBtn = findViewById(R.id.outfit_suggestion_btn);
         shoppingListBtn = findViewById(R.id.shopping_list_btn);
+        sceneMatchingBtn = findViewById(R.id.scene_matching_btn);
+        fashionTrendsBtn = findViewById(R.id.fashion_trends_btn);
+        personalizationBtn = findViewById(R.id.personalization_btn);
         
         // 设置底部导航
         setupBottomNavigation();
@@ -139,6 +145,9 @@ public class MainActivity extends AppCompatActivity {
      * 设置功能按钮点击事件
      */
     private void setupFeatureButtons() {
+        // 查找社区按钮
+        LinearLayout fashionCommunityBtn = findViewById(R.id.fashion_community_btn);
+        
         addClothesBtn.setOnClickListener(v -> {
             Toast.makeText(this, "添加服装功能即将上线", Toast.LENGTH_SHORT).show();
         });
@@ -153,6 +162,24 @@ public class MainActivity extends AppCompatActivity {
         
         shoppingListBtn.setOnClickListener(v -> {
             Toast.makeText(this, "购物清单功能即将上线", Toast.LENGTH_SHORT).show();
+        });
+        
+        sceneMatchingBtn.setOnClickListener(v -> {
+            Toast.makeText(this, "场景搭配功能即将上线", Toast.LENGTH_SHORT).show();
+        });
+        
+        fashionTrendsBtn.setOnClickListener(v -> {
+            Toast.makeText(this, "流行趋势功能即将上线", Toast.LENGTH_SHORT).show();
+        });
+        
+        personalizationBtn.setOnClickListener(v -> {
+            Toast.makeText(this, "个性定制功能即将上线", Toast.LENGTH_SHORT).show();
+        });
+        
+        // 添加社区按钮点击事件，跳转到社区页面
+        fashionCommunityBtn.setOnClickListener(v -> {
+            Intent intent = new Intent(this, CommunityActivity.class);
+            startActivity(intent);
         });
     }
 }

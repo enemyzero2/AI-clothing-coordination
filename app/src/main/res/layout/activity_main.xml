@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFF9FA"
+    android:background="#F9F5FF"
     tools:context=".MainActivity">
 
     <!-- 顶部导航区 -->
@@ -13,7 +13,7 @@
         android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFF9FA"
+        android:background="#F9F5FF"
         app:elevation="0dp">
 
         <androidx.appcompat.widget.Toolbar
@@ -32,7 +32,7 @@
                     android:layout_height="36dp"
                     android:src="@drawable/default_avatar"
                     app:civ_border_width="1dp"
-                    app:civ_border_color="#E91E63"
+                    app:civ_border_color="@color/rainbow_pink"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"/>
@@ -43,7 +43,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="AI衣搭"
-                    android:textColor="@color/colorAccent"
+                    android:textColor="@color/rainbow_purple"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
@@ -61,7 +61,7 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:tint="#9C51E0"/>
+                    app:tint="@color/rainbow_purple"/>
                 
             </androidx.constraintlayout.widget.ConstraintLayout>
             
@@ -92,7 +92,7 @@
                 android:layout_marginTop="8dp"
                 app:cardCornerRadius="23dp"
                 app:cardElevation="0dp"
-                app:cardBackgroundColor="#F2F2F2">
+                app:cardBackgroundColor="#F0EAFF">
                 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -106,7 +106,7 @@
                         android:layout_width="18dp"
                         android:layout_height="18dp"
                         android:src="@drawable/ic_search"
-                        app:tint="#9E9E9E"/>
+                        app:tint="@color/rainbow_purple"/>
                     
                     <TextView
                         android:layout_width="match_parent"
@@ -114,7 +114,7 @@
                         android:layout_marginStart="8dp"
                         android:text="搜索服装或搭配..."
                         android:textSize="14sp"
-                        android:textColor="#9E9E9E"/>
+                        android:textColor="@color/rainbow_purple"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -130,7 +130,7 @@
                 <View
                     android:layout_width="3dp"
                     android:layout_height="18dp"
-                    android:background="#E91E63"/>
+                    android:background="@color/rainbow_pink"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -162,7 +162,7 @@
                 android:layout_marginTop="16dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardBackgroundColor="#F8F5FF">
                 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -340,7 +340,7 @@
                 android:layout_marginTop="16dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardBackgroundColor="#F8F5FF">
                 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -517,7 +517,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#FFFFFF"
+        android:background="#F8F5FF"
         app:menu="@menu/bottom_nav_menu"
         app:labelVisibilityMode="labeled"
         app:itemIconTint="@color/bottom_nav_colors"
@@ -533,7 +533,7 @@
         android:src="@drawable/ic_add"
         app:fabSize="normal"
         app:maxImageSize="24dp"
-        app:backgroundTint="#E91E63"
+        app:backgroundTint="@color/rainbow_purple"
         app:tint="#FFFFFF"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

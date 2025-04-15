@@ -16,6 +16,59 @@
     <color name="colorText">#333333</color>
     <color name="colorTextSecondary">#757575</color>
 
+    <!-- 社区功能颜色 -->
+    <color name="primaryColor">@color/colorPrimary</color>
+    <color name="accentColor">@color/colorAccent</color>
+    <color name="textPrimaryColor">@color/colorText</color>
+    <color name="textSecondaryColor">@color/colorTextSecondary</color>
+    <color name="iconNormalColor">#757575</color>
+    <color name="likeColor">#E91E63</color>
+    <color name="commentColor">#2196F3</color>
+    <color name="shareColor">#4CAF50</color>
+    <color name="tryOnColor">#FF9800</color>
+
+    <!-- 新的彩虹主题色调 -->
+    <color name="rainbow_purple">#845EC2</color>
+    <color name="rainbow_pink">#D65DB1</color>
+    <color name="rainbow_coral">#FF6F91</color>
+    <color name="rainbow_orange">#FF9671</color>
+    <color name="rainbow_yellow_orange">#FFC75F</color>
+    <color name="rainbow_yellow">#F9F871</color>
+
+    <!-- 日间/夜间模式颜色 -->
+    <!-- 日间模式渐变色 -->
+    <color name="dayGradientTop">#46CBF9</color>
+    <color name="dayGradientMiddleTop">#6BE0FA</color>
+    <color name="dayGradientMiddle">#93F3FC</color>
+    <color name="dayGradientMiddleLower">#C4FDFF</color>
+    <color name="dayGradientBottom">#FEFEFE</color>
+    
+    <!-- 夜间模式渐变色 -->
+    <color name="nightGradientTop">#051937</color>
+    <color name="nightGradientMiddleTop">#163B64</color>
+    <color name="nightGradientMiddle">#216195</color>
+    <color name="nightGradientMiddleLower">#268BC7</color>
+    <color name="nightGradientBottom">#21B8FA</color>
+    
+    <!-- 玻璃效果颜色 -->
+    <color name="glassEffectDay">#99FFFFFF</color>
+    <color name="glassEffectNight">#33000000</color>
+    <color name="glassEffectStroke">#26FFFFFF</color>
+    
+    <!-- 模糊覆盖层 -->
+    <color name="blurOverlayActive">#E6000000</color>
+    <color name="blurOverlayInactive">#CC000000</color>
+    
+    <!-- 废弃的旧日间/夜间颜色 (保留以兼容旧代码) -->
+    <color name="colorDayBackground">#46C2F8</color>
+    <color name="colorDayBackgroundEnd">#DFEEF5</color>
+    <color name="colorNightBackground">#051937</color>
+    <color name="colorNightBackgroundEnd">#21B8FA</color>
+    <color name="colorDayText">#FFFFFF</color>
+    <color name="colorNightText">#FFFFFF</color>
+    <color name="colorGlassLight">#33FFFFFF</color>
+    <color name="colorGlassDark">#33000000</color>
+
     <!-- 蓝调 -->
 
 </resources> 

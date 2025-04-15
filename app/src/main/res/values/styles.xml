@@ -11,4 +11,16 @@
         <item name="android:textColorPrimary">@color/colorText</item>
         <item name="android:textColorSecondary">@color/colorTextSecondary</item>
     </style>
+    
+    <!-- 彩虹主题 -->
+    <style name="RainbowTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/rainbow_purple</item>
+        <item name="colorPrimaryDark">@color/rainbow_purple</item>
+        <item name="colorAccent">@color/rainbow_pink</item>
+        <item name="android:statusBarColor">@color/rainbow_purple</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="android:textColorPrimary">@color/colorText</item>
+        <item name="android:textColorSecondary">@color/colorTextSecondary</item>
+    </style>
 </resources> 

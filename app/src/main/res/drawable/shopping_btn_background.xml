@@ -3,12 +3,12 @@
     android:color="#80FFFFFF">
     <item>
         <shape android:shape="oval">
-            <solid android:color="#26A69A" />
+            <solid android:color="@color/rainbow_yellow_orange" />
         </shape>
     </item>
     <item android:id="@android:id/mask">
         <shape android:shape="oval">
-            <solid android:color="#26A69A" />
+            <solid android:color="@color/rainbow_yellow_orange" />
         </shape>
     </item>
 </ripple> 
