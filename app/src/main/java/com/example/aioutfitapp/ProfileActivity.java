@@ -131,37 +131,37 @@ public class ProfileActivity extends AppCompatActivity {
         
         // 设置按钮
         settingsButton.setOnClickListener(v -> {
-            Toast.makeText(this, "设置功能即将上线", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.feature_coming_soon, getString(R.string.settings)), Toast.LENGTH_SHORT).show();
         });
         
         // 编辑资料按钮
         editProfileBtn.setOnClickListener(v -> {
-            Toast.makeText(this, "编辑资料功能即将上线", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.feature_coming_soon, getString(R.string.edit_profile)), Toast.LENGTH_SHORT).show();
         });
         
         // 编辑身材数据按钮
         editBodyDataBtn.setOnClickListener(v -> {
-            Toast.makeText(this, "完善身材数据功能即将上线", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.feature_coming_soon, getString(R.string.edit_body_data)), Toast.LENGTH_SHORT).show();
         });
         
         // 查看全部穿搭
         viewAllOutfits.setOnClickListener(v -> {
-            Toast.makeText(this, "查看全部穿搭功能即将上线", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.feature_coming_soon, getString(R.string.view_all_outfits)), Toast.LENGTH_SHORT).show();
         });
         
         // 收藏夹
         favoritesBtn.setOnClickListener(v -> {
-            Toast.makeText(this, "收藏夹功能即将上线", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.feature_coming_soon, getString(R.string.favorites_btn)), Toast.LENGTH_SHORT).show();
         });
         
         // 穿搭日历
         calendarBtn.setOnClickListener(v -> {
-            Toast.makeText(this, "穿搭日历功能即将上线", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.feature_coming_soon, getString(R.string.outfit_calendar)), Toast.LENGTH_SHORT).show();
         });
         
         // 购物清单
         shoppingListBtn.setOnClickListener(v -> {
-            Toast.makeText(this, "购物清单功能即将上线", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.feature_coming_soon, getString(R.string.shopping_list)), Toast.LENGTH_SHORT).show();
         });
     }
     
@@ -176,7 +176,7 @@ public class ProfileActivity extends AppCompatActivity {
         
         // 设置用户信息
         userName.setText("时尚达人");
-        userId.setText("ID: stylish123");
+        userId.setText(getString(R.string.user_id_format, "stylish123"));
         userSignature.setText("热爱生活，热爱穿搭！");
         
         // 设置统计数据
@@ -185,10 +185,10 @@ public class ProfileActivity extends AppCompatActivity {
         favoritesCount.setText("36");
         
         // 设置身材数据
-        heightValue.setText("175 cm");
-        weightValue.setText("65 kg");
-        shoulderValue.setText("46 cm");
-        chestValue.setText("95 cm");
+        heightValue.setText(getString(R.string.height_format, "175"));
+        weightValue.setText(getString(R.string.weight_format, "65"));
+        shoulderValue.setText(getString(R.string.width_format, "46"));
+        chestValue.setText(getString(R.string.width_format, "95"));
     }
     
     /**
@@ -203,7 +203,7 @@ public class ProfileActivity extends AppCompatActivity {
         // styleChipGroup.removeAllViews();
         
         // 示例：动态添加标签
-        String[] additionalStyles = {"日系风", "街头潮流"};
+        String[] additionalStyles = {getString(R.string.japanese_style), getString(R.string.street_fashion)};
         int[] colors = {R.color.colorAccent, R.color.colorPrimary};
         String[] bgColors = {"#FFF1F7", "#F1E6FF"};
         
@@ -226,10 +226,10 @@ public class ProfileActivity extends AppCompatActivity {
     private void loadOutfitRecords() {
         // 准备数据
         List<OutfitRecord> outfitRecords = new ArrayList<>();
-        outfitRecords.add(new OutfitRecord(R.drawable.outfit_1, "休闲周末", "2023-03-18"));
-        outfitRecords.add(new OutfitRecord(R.drawable.outfit_2, "商务简约", "2023-03-15"));
-        outfitRecords.add(new OutfitRecord(R.drawable.outfit_3, "约会穿搭", "2023-03-12"));
-        outfitRecords.add(new OutfitRecord(R.drawable.outfit_4, "运动活力", "2023-03-10"));
+        outfitRecords.add(new OutfitRecord(R.drawable.outfit_1, getString(R.string.casual_weekend), "2023-03-18"));
+        outfitRecords.add(new OutfitRecord(R.drawable.outfit_2, getString(R.string.business_casual), "2023-03-15"));
+        outfitRecords.add(new OutfitRecord(R.drawable.outfit_3, getString(R.string.date_outfit), "2023-03-12"));
+        outfitRecords.add(new OutfitRecord(R.drawable.outfit_4, getString(R.string.sport_active), "2023-03-10"));
         
         // 设置RecyclerView
         outfitAdapter = new OutfitRecordAdapter(outfitRecords);
@@ -284,13 +284,14 @@ public class ProfileActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(OutfitViewHolder holder, int position) {
             OutfitRecord record = outfitRecords.get(position);
+            
             holder.outfitImage.setImageResource(record.getImageResId());
             holder.outfitTitle.setText(record.getTitle());
             holder.outfitDate.setText(record.getDate());
             
-            // 点击事件
+            // 点击查看穿搭详情
             holder.itemView.setOnClickListener(v -> {
-                Toast.makeText(ProfileActivity.this, "查看穿搭详情即将上线", Toast.LENGTH_SHORT).show();
+                Toast.makeText(ProfileActivity.this, getString(R.string.feature_coming_soon, record.getTitle()), Toast.LENGTH_SHORT).show();
             });
         }
         
@@ -299,6 +300,7 @@ public class ProfileActivity extends AppCompatActivity {
             return outfitRecords.size();
         }
         
+        // 视图持有者
         class OutfitViewHolder extends RecyclerView.ViewHolder {
             ImageView outfitImage;
             TextView outfitTitle;

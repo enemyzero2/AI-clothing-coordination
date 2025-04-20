@@ -4,6 +4,28 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- 网络权限 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- 通话和SIP权限 -->
+    <uses-permission android:name="android.permission.USE_SIP" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    
+    <!-- SIP服务需要的意图过滤器 -->
+    <uses-feature android:name="android.hardware.sip.voip" android:required="true" />
+    <uses-feature android:name="android.hardware.wifi" android:required="true" />
+    <uses-feature android:name="android.hardware.microphone" android:required="true" />
+    
+    <!-- 视频通话需要的摄像头功能 -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -42,6 +64,14 @@
             android:screenOrientation="portrait"
             android:label="我的衣柜"
             android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".CallActivity"
+            android:theme="@style/AppTheme.FullScreen"
+            android:configChanges="orientation|screenSize"
+            android:screenOrientation="landscape"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         
     </application>
 

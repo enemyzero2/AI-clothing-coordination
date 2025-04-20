@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/call_background"
+    tools:context=".activity.CallActivity">
+
+    <!-- 远程视频视图 -->
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/remote_video_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <!-- 本地视频视图 -->
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/local_video_view"
+        android:layout_width="120dp"
+        android:layout_height="160dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_margin="16dp"
+        android:visibility="gone" />
+
+    <!-- 来电者头像 (仅音频通话时显示) -->
+    <ImageView
+        android:id="@+id/caller_avatar"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="100dp"
+        android:src="@drawable/default_avatar"
+        android:contentDescription="来电者头像" />
+
+    <!-- 通话信息区域 -->
+    <LinearLayout
+        android:id="@+id/call_info_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/caller_avatar"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/caller_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            tools:text="张三" />
+
+        <TextView
+            android:id="@+id/call_state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            tools:text="正在拨号..." />
+
+        <Chronometer
+            android:id="@+id/call_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- 网络质量指示器 -->
+    <TextView
+        android:id="@+id/network_quality"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/incoming_call_controls"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="32dp"
+        android:background="#88000000"
+        android:padding="8dp"
+        android:textColor="@android:color/holo_green_light"
+        android:textSize="14sp"
+        tools:text="4G: 45Mbps, 35ms, 0.5%丢包" />
+
+    <!-- 来电控制区域 -->
+    <LinearLayout
+        android:id="@+id/incoming_call_controls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="48dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <!-- 拒绝通话按钮 -->
+        <ImageButton
+            android:id="@+id/reject_call_button"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginEnd="64dp"
+            android:background="@drawable/circle_red"
+            android:contentDescription="拒绝通话"
+            android:src="@drawable/ic_call_end" />
+
+        <!-- 接听通话按钮 -->
+        <ImageButton
+            android:id="@+id/answer_call_button"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@drawable/circle_green"
+            android:contentDescription="接听通话"
+            android:src="@drawable/ic_call" />
+
+    </LinearLayout>
+
+    <!-- 通话中控制区域 -->
+    <LinearLayout
+        android:id="@+id/ongoing_call_controls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="48dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:visibility="visible">
+
+        <!-- 麦克风开关按钮 -->
+        <ImageButton
+            android:id="@+id/mute_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/circle_white"
+            android:contentDescription="麦克风"
+            android:src="@drawable/ic_mic_on" />
+
+        <!-- 结束通话按钮 -->
+        <ImageButton
+            android:id="@+id/end_call_button"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/circle_red"
+            android:contentDescription="结束通话"
+            android:src="@drawable/ic_call_end" />
+
+        <!-- 扬声器开关按钮 -->
+        <ImageButton
+            android:id="@+id/speaker_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="16dp"
+            android:background="@drawable/circle_white"
+            android:contentDescription="扬声器"
+            android:src="@drawable/ic_speaker_off" />
+
+    </LinearLayout>
+
+    <!-- 视频通话额外控制区域 -->
+    <LinearLayout
+        android:id="@+id/video_call_controls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/ongoing_call_controls"
+        android:layout_marginBottom="16dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:visibility="gone">
+
+        <!-- 视频开关按钮 -->
+        <ImageButton
+            android:id="@+id/video_toggle_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="32dp"
+            android:background="@drawable/circle_white"
+            android:contentDescription="视频开关"
+            android:src="@drawable/ic_video_on" />
+
+        <!-- 切换摄像头按钮 -->
+        <ImageButton
+            android:id="@+id/switch_camera_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/circle_white"
+            android:contentDescription="切换摄像头"
+            android:src="@drawable/ic_switch_camera" />
+
+    </LinearLayout>
+
+</RelativeLayout>

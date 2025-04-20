@@ -1,7 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 应用基本信息 -->
     <string name="app_name">AI衣搭</string>
     <string name="login">登录</string>
     <string name="register">注册</string>
     <string name="welcome">欢迎使用AI衣搭</string>
+    
+    <!-- 衣柜相关字符串 -->
+    <string name="wardrobe">衣柜</string>
+    <string name="add_clothing">添加服装</string>
+    <string name="search">搜索</string>
+    <string name="search_coming_soon">搜索功能即将上线</string>
+    <string name="empty_wardrobe">您的衣柜空空如也</string>
+    <string name="add_first_clothing">添加第一件衣物</string>
+    
+    <!-- 服装类型 -->
+    <string name="all">全部</string>
+    <string name="tops">上装</string>
+    <string name="bottoms">下装</string>
+    <string name="outerwear">外套</string>
+    <string name="dresses">连衣裙</string>
+    <string name="shoes">鞋子</string>
+    <string name="accessories">配饰</string>
+    
+    <!-- 筛选和排序 -->
+    <string name="filter">筛选</string>
+    <string name="sort">排序</string>
+    <string name="sort_newest">最新添加</string>
+    <string name="sort_oldest">最早添加</string>
+    <string name="sort_name_asc">名称 A-Z</string>
+    <string name="sort_name_desc">名称 Z-A</string>
+    <string name="sort_favorites">收藏优先</string>
+    <string name="sort_favorite_level">喜爱程度</string>
+    
+    <!-- 季节标签 -->
+    <string name="spring">春季</string>
+    <string name="summer">夏季</string>
+    <string name="autumn">秋季</string>
+    <string name="winter">冬季</string>
+    <string name="favorite">收藏</string>
+    
+    <!-- 个人主页相关 -->
+    <string name="profile">个人主页</string>
+    <string name="settings">设置</string>
+    <string name="edit_profile">编辑资料</string>
+    <string name="feature_coming_soon">%1$s功能即将上线</string>
+    <string name="user_id_format">ID: %1$s</string>
+    
+    <!-- 统计信息 -->
+    <string name="clothes">衣物</string>
+    <string name="outfits">穿搭</string>
+    <string name="favorites">收藏</string>
+    
+    <!-- 风格标签 -->
+    <string name="style_tags">风格标签</string>
+    <string name="casual">休闲风</string>
+    <string name="formal">正式风</string>
+    <string name="sporty">运动风</string>
+    <string name="minimalist">极简风</string>
+    <string name="japanese_style">日系风</string>
+    <string name="street_fashion">街头潮流</string>
+    
+    <!-- 身体数据 -->
+    <string name="body_data">身材数据</string>
+    <string name="height">身高</string>
+    <string name="weight">体重</string>
+    <string name="shoulder_width">肩宽</string>
+    <string name="chest">胸围</string>
+    <string name="edit_body_data">完善身材数据</string>
+    <string name="height_format">%1$s cm</string>
+    <string name="weight_format">%1$s kg</string>
+    <string name="width_format">%1$s cm</string>
+    
+    <!-- 穿搭记录 -->
+    <string name="outfit_records">穿搭记录</string>
+    <string name="view_all_outfits">查看全部</string>
+    <string name="casual_weekend">休闲周末</string>
+    <string name="business_casual">商务简约</string>
+    <string name="date_outfit">约会穿搭</string>
+    <string name="sport_active">运动活力</string>
+    
+    <!-- 功能按钮 -->
+    <string name="favorites_btn">收藏夹</string>
+    <string name="outfit_calendar">穿搭日历</string>
+    <string name="shopping_list">购物清单</string>
+    <string name="smart_matching">智能搭配</string>
+    
+    <!-- 社区相关 -->
+    <string name="community">社区</string>
+    <string name="refresh_success">刷新成功</string>
+    <string name="create_post">发布</string>
+    <string name="create_post_coming_soon">发布功能即将上线，敬请期待！</string>
+    <string name="search_coming_soon_wait">搜索功能即将上线，敬请期待！</string>
+    <string name="filter_coming_soon">筛选功能即将上线，敬请期待！</string>
+    <string name="settings_coming_soon">设置功能即将上线，敬请期待！</string>
+    
+    <!-- 交互提示 -->
+    <string name="liked">已点赞</string>
+    <string name="unliked">已取消点赞</string>
+    <string name="comment_coming_soon">评论功能即将上线，敬请期待！</string>
+    <string name="share_coming_soon">分享功能即将上线，敬请期待！</string>
+    <string name="try_on_coming_soon">一键换装功能即将上线，敬请期待！</string>
+    <string name="post_detail_coming_soon">帖子详情功能即将上线，敬请期待！</string>
+    
+    <!-- 错误提示 -->
+    <string name="init_error">初始化错误: %1$s</string>
+    <string name="load_data_error">加载数据错误: %1$s</string>
+    
+    <!-- 添加示例衣物相关 -->
+    <string name="add_sample_clothes">添加示例衣物</string>
+    <string name="sample_clothes_added">已添加 %1$d/%2$d 件示例衣物</string>
 </resources> 

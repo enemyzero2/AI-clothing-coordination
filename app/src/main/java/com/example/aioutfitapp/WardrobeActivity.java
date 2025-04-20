@@ -119,7 +119,7 @@ public class WardrobeActivity extends AppCompatActivity {
         
         // 搜索按钮
         searchButton.setOnClickListener(v -> {
-            Toast.makeText(this, "搜索功能即将上线", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.search_coming_soon), Toast.LENGTH_SHORT).show();
             // TODO: 实现搜索功能
         });
         
@@ -265,10 +265,10 @@ public class WardrobeActivity extends AppCompatActivity {
      * 加载衣柜数据
      */
     private void loadWardrobeData() {
-        // 从管理器获取所有服装数据
+        // 获取所有服装
         List<Clothing> allClothing = wardrobeManager.getAllClothing();
         
-        // 筛选和排序服装
+        // 根据筛选和排序条件更新列表
         filterAndSortClothing();
         
         // 更新空状态显示
@@ -276,58 +276,50 @@ public class WardrobeActivity extends AppCompatActivity {
     }
     
     /**
-     * 筛选和排序衣物
+     * 根据筛选和排序条件更新列表
      */
     private void filterAndSortClothing() {
-        // 获取全部服装列表
+        // 获取所有服装
         List<Clothing> allClothing = wardrobeManager.getAllClothing();
         
-        // 筛选服装类型
-        List<Clothing> filteredByType;
-        if (currentType == null) {
-            filteredByType = allClothing;
-        } else {
-            filteredByType = wardrobeManager.getClothingByType(currentType);
-        }
+        // 清空当前列表
+        currentClothingList.clear();
         
-        // 筛选季节
-        List<Clothing> filteredByTypeAndSeason = new ArrayList<>(filteredByType);
-        if (!selectedSeasons.isEmpty()) {
-            filteredByTypeAndSeason.clear();
-            for (Clothing clothing : filteredByType) {
-                boolean hasSelectedSeason = false;
-                for (Clothing.Season selectedSeason : selectedSeasons) {
-                    if (clothing.getSeasons().contains(selectedSeason)) {
-                        hasSelectedSeason = true;
-                        break;
-                    }
-                }
-                if (hasSelectedSeason) {
-                    filteredByTypeAndSeason.add(clothing);
+        // 筛选
+        for (Clothing clothing : allClothing) {
+            // 类型筛选
+            if (currentType != null && clothing.getType() != currentType) {
+                continue;
+            }
+            
+            // 季节筛选
+            boolean seasonMatch = selectedSeasons.isEmpty();
+            for (Clothing.Season season : selectedSeasons) {
+                if (clothing.getSeasons().contains(season)) {
+                    seasonMatch = true;
+                    break;
                 }
             }
-        }
-        
-        // 筛选收藏
-        List<Clothing> fullFilteredList = new ArrayList<>(filteredByTypeAndSeason);
-        if (showFavoritesOnly) {
-            fullFilteredList.clear();
-            for (Clothing clothing : filteredByTypeAndSeason) {
-                if (clothing.isFavorite()) {
-                    fullFilteredList.add(clothing);
-                }
+            if (!seasonMatch) {
+                continue;
             }
+            
+            // 收藏筛选
+            if (showFavoritesOnly && !clothing.isFavorite()) {
+                continue;
+            }
+            
+            // 通过所有筛选条件，添加到列表
+            currentClothingList.add(clothing);
         }
         
         // 排序
-        List<Clothing> sortedList = wardrobeManager.sortClothing(fullFilteredList, currentSortOption);
+        wardrobeManager.sortClothing(currentClothingList, currentSortOption);
         
-        // 更新适配器
-        currentClothingList.clear();
-        currentClothingList.addAll(sortedList);
+        // 通知适配器数据已更改
         clothingAdapter.notifyDataSetChanged();
         
-        // 更新空状态
+        // 更新空状态显示
         updateEmptyState();
     }
     
@@ -336,24 +328,22 @@ public class WardrobeActivity extends AppCompatActivity {
      */
     private void updateEmptyState() {
         if (currentClothingList.isEmpty()) {
-            clothingRecyclerView.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
+            clothingRecyclerView.setVisibility(View.GONE);
         } else {
-            clothingRecyclerView.setVisibility(View.VISIBLE);
             emptyState.setVisibility(View.GONE);
+            clothingRecyclerView.setVisibility(View.VISIBLE);
         }
     }
     
     /**
-     * 打开添加服装界面
+     * 打开添加服装活动
      */
     private void openAddClothingActivity() {
-        // 目前先使用Toast提示
-        Toast.makeText(this, "添加服装功能即将上线", Toast.LENGTH_SHORT).show();
-        
-        // TODO: 实现添加服装活动
+        // TODO: 实现添加服装功能
         // Intent intent = new Intent(this, AddClothingActivity.class);
-        // startActivityForResult(intent, REQUEST_ADD_CLOTHING);
+        // startActivityForResult(intent, ADD_CLOTHING_REQUEST_CODE);
+        Toast.makeText(this, getString(R.string.feature_coming_soon, getString(R.string.add_clothing)), Toast.LENGTH_SHORT).show();
     }
     
     /**
@@ -362,17 +352,15 @@ public class WardrobeActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        
-        // TODO: 处理添加/编辑服装的结果
+        // TODO: 处理添加服装结果
     }
     
     /**
-     * 页面恢复时刷新数据
+     * 活动恢复时刷新数据
      */
     @Override
     protected void onResume() {
         super.onResume();
-        // 刷新衣柜数据
         loadWardrobeData();
     }
 } 

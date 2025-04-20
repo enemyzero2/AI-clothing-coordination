@@ -30,4 +30,12 @@
         <item name="android:textColor">@color/colorTextSecondary</item>
         <item name="textAllCaps">false</item>
     </style>
+
+    <!-- 全屏主题，用于通话界面 -->
+    <style name="AppTheme.FullScreen" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@color/call_background</item>
+        <item name="android:windowActivityTransitions">true</item>
+    </style>
 </resources> 

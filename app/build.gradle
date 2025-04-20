@@ -36,6 +36,14 @@ dependencies {
     // Gson - JSON解析库
     implementation 'com.google.code.gson:gson:2.10.1'
     
+    // Retrofit - 网络请求库
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    
+    // OkHttp - HTTP客户端
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
+    
     // 高斯模糊库
     implementation 'com.eightbitlab:blurview:1.6.6'
     
@@ -48,6 +56,9 @@ dependencies {
     // Glide - 图片加载库
     implementation 'com.github.bumptech.glide:glide:4.15.1'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
+    
+    // WebRTC - 视频通话库
+    implementation 'org.webrtc:google-webrtc:1.0.32006'
     
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

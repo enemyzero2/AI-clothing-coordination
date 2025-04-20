@@ -79,6 +79,10 @@
     <color name="colorGlassLight">#33FFFFFF</color>
     <color name="colorGlassDark">#33000000</color>
 
+    
+    <!-- 通话界面颜色 -->
+    <color name="call_background">#121212</color>
+
     <!-- 蓝调 -->
 
 </resources> 

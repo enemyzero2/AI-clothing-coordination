@@ -72,7 +72,7 @@ public class CommunityActivity extends AppCompatActivity implements PostAdapter.
             fabCreatePost.setOnClickListener(v -> navigateToCreatePost());
         } catch (Exception e) {
             // 捕获异常并显示错误信息
-            Toast.makeText(this, "初始化错误: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.init_error, e.getMessage()), Toast.LENGTH_LONG).show();
             e.printStackTrace();
             // 返回主页
             finish();
@@ -110,7 +110,7 @@ public class CommunityActivity extends AppCompatActivity implements PostAdapter.
                 postAdapter.notifyDataSetChanged();
             }
         } catch (Exception e) {
-            Toast.makeText(this, "加载数据错误: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.load_data_error, e.getMessage()), Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
     }
@@ -122,14 +122,14 @@ public class CommunityActivity extends AppCompatActivity implements PostAdapter.
             // 重新加载数据
             loadDummyPosts();
             swipeRefreshLayout.setRefreshing(false);
-            Toast.makeText(CommunityActivity.this, "刷新成功", Toast.LENGTH_SHORT).show();
+            Toast.makeText(CommunityActivity.this, getString(R.string.refresh_success), Toast.LENGTH_SHORT).show();
         }, 1500);
     }
     
     private void navigateToCreatePost() {
         // Intent intent = new Intent(this, CreatePostActivity.class);
         // startActivity(intent);
-        Toast.makeText(this, "发布功能即将上线，敬请期待！", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, getString(R.string.create_post_coming_soon), Toast.LENGTH_SHORT).show();
     }
     
     @Override
@@ -147,15 +147,15 @@ public class CommunityActivity extends AppCompatActivity implements PostAdapter.
             return true;
         } else if (id == R.id.action_search) {
             // 打开搜索页面
-            Toast.makeText(this, "搜索功能即将上线，敬请期待！", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.search_coming_soon_wait), Toast.LENGTH_SHORT).show();
             return true;
         } else if (id == R.id.action_filter) {
             // 打开筛选页面
-            Toast.makeText(this, "筛选功能即将上线，敬请期待！", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.filter_coming_soon), Toast.LENGTH_SHORT).show();
             return true;
         } else if (id == R.id.action_settings) {
             // 打开设置页面
-            Toast.makeText(this, "设置功能即将上线，敬请期待！", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.settings_coming_soon), Toast.LENGTH_SHORT).show();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -177,7 +177,7 @@ public class CommunityActivity extends AppCompatActivity implements PostAdapter.
         postAdapter.notifyItemChanged(position);
         
         // 实际应调用API更新点赞状态
-        Toast.makeText(this, isLiked ? "已点赞" : "已取消点赞", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, isLiked ? getString(R.string.liked) : getString(R.string.unliked), Toast.LENGTH_SHORT).show();
     }
     
     @Override
@@ -187,14 +187,14 @@ public class CommunityActivity extends AppCompatActivity implements PostAdapter.
         // Intent intent = new Intent(this, CommentActivity.class);
         // intent.putExtra("POST_ID", post.getId());
         // startActivity(intent);
-        Toast.makeText(this, "评论功能即将上线，敬请期待！", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, getString(R.string.comment_coming_soon), Toast.LENGTH_SHORT).show();
     }
     
     @Override
     public void onShareClicked(int position) {
         Post post = postList.get(position);
         // 打开分享对话框
-        Toast.makeText(this, "分享功能即将上线，敬请期待！", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, getString(R.string.share_coming_soon), Toast.LENGTH_SHORT).show();
     }
     
     @Override
@@ -205,7 +205,7 @@ public class CommunityActivity extends AppCompatActivity implements PostAdapter.
         // intent.putExtra("OUTFIT_ID", post.getOutfitId());
         // intent.putExtra("OUTFIT_IMAGE_URL", post.getOutfitImageUrl());
         // startActivity(intent);
-        Toast.makeText(this, "一键换装功能即将上线，敬请期待！", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, getString(R.string.try_on_coming_soon), Toast.LENGTH_SHORT).show();
     }
     
     @Override
@@ -215,7 +215,7 @@ public class CommunityActivity extends AppCompatActivity implements PostAdapter.
         // Intent intent = new Intent(this, PostDetailActivity.class);
         // intent.putExtra("POST_ID", post.getId());
         // startActivity(intent);
-        Toast.makeText(this, "帖子详情功能即将上线，敬请期待！", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, getString(R.string.post_detail_coming_soon), Toast.LENGTH_SHORT).show();
     }
     
     @Override

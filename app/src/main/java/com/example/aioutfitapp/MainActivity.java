@@ -6,6 +6,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+import android.util.Log;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,7 +19,11 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import com.example.aioutfitapp.model.Clothing;
+import com.example.aioutfitapp.model.WardrobeManager;
 
 /**
  * 应用程序主界面
@@ -26,6 +32,8 @@ import java.util.List;
  */
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "MainActivity";
+    
     private ViewPager2 outfitPager;
     private BottomNavigationView bottomNavigationView;
     private FloatingActionButton fabAdd;
@@ -39,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout sceneMatchingBtn;
     private LinearLayout fashionTrendsBtn;
     private LinearLayout personalizationBtn;
+    private LinearLayout callFunctionBtn; // 新增通话功能按钮
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         sceneMatchingBtn = findViewById(R.id.scene_matching_btn);
         fashionTrendsBtn = findViewById(R.id.fashion_trends_btn);
         personalizationBtn = findViewById(R.id.personalization_btn);
+        callFunctionBtn = findViewById(R.id.call_function_btn); // 初始化通话功能按钮
         
         // 设置底部导航
         setupBottomNavigation();
@@ -154,6 +164,10 @@ public class MainActivity extends AppCompatActivity {
         });
         
         myWardrobeBtn.setOnClickListener(v -> {
+            // 自动添加示例衣物到衣柜
+            addSampleClothes();
+            
+            // 跳转到衣柜页面
             Intent intent = new Intent(this, WardrobeActivity.class);
             startActivity(intent);
         });
@@ -183,6 +197,149 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, CommunityActivity.class);
             startActivity(intent);
         });
+        
+        // 添加通话功能按钮点击事件，跳转到通话界面
+        callFunctionBtn.setOnClickListener(v -> {
+            try {
+                String userId = "user123"; // 示例用户ID，实际应从登录用户信息中获取
+                String roomId = "room" + System.currentTimeMillis(); // 生成随机房间ID
+                
+                Log.d(TAG, "准备启动通话活动");
+                
+                // 使用显式Intent，明确指定完整的类名
+                Intent intent = new Intent(this, com.example.aioutfitapp.CallActivity.class);
+                
+                // 添加必要的传参
+                intent.putExtra("call_type", 1); // 视频通话类型
+                intent.putExtra("caller_id", userId);
+                intent.putExtra("is_incoming", false);
+                intent.putExtra("room_id", roomId);
+                
+                startActivity(intent);
+                Log.d(TAG, "通话活动启动成功");
+            } catch (Exception e) {
+                Log.e(TAG, "启动通话活动失败", e);
+                Toast.makeText(this, "启动通话功能失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    /**
+     * 添加示例衣物到衣柜
+     */
+    private void addSampleClothes() {
+        WardrobeManager wardrobeManager = WardrobeManager.getInstance(this);
+        
+        // 创建示例衣物列表
+        List<Clothing> sampleClothes = createSampleClothes();
+        
+        // 添加到衣柜
+        int addedCount = 0;
+        for (Clothing clothing : sampleClothes) {
+            boolean added = wardrobeManager.addClothing(clothing);
+            if (added) {
+                addedCount++;
+            }
+        }
+        
+        // 显示添加结果
+        Toast.makeText(this, 
+                getString(R.string.sample_clothes_added, addedCount, sampleClothes.size()), 
+                Toast.LENGTH_SHORT).show();
+    }
+    
+    /**
+     * 创建示例衣物列表
+     */
+    private List<Clothing> createSampleClothes() {
+        List<Clothing> sampleClothes = new ArrayList<>();
+        
+        // 示例1: 黑色T恤
+        Clothing tShirt = new Clothing();
+        tShirt.setName("黑色基础款T恤");
+        tShirt.setBrand("优衣库");
+        tShirt.setType(Clothing.ClothingType.TOP);
+        tShirt.setColors(Arrays.asList("黑色"));
+        tShirt.setSeasons(Arrays.asList(
+                Clothing.Season.SPRING, 
+                Clothing.Season.SUMMER, 
+                Clothing.Season.AUTUMN
+        ));
+        tShirt.setTags(Arrays.asList("基础款", "百搭", "日常"));
+        tShirt.setNotes("非常舒适的基础款，适合日常穿着");
+        sampleClothes.add(tShirt);
+        
+        // 示例2: 牛仔裤
+        Clothing jeans = new Clothing();
+        jeans.setName("直筒牛仔裤");
+        jeans.setBrand("李维斯");
+        jeans.setType(Clothing.ClothingType.BOTTOM);
+        jeans.setColors(Arrays.asList("蓝色"));
+        jeans.setSeasons(Arrays.asList(
+                Clothing.Season.SPRING, 
+                Clothing.Season.AUTUMN, 
+                Clothing.Season.WINTER
+        ));
+        jeans.setTags(Arrays.asList("经典", "耐穿", "百搭"));
+        jeans.setNotes("经典款牛仔裤，质量很好");
+        jeans.setFavorite(true);
+        sampleClothes.add(jeans);
+        
+        // 示例3: 羽绒服
+        Clothing downJacket = new Clothing();
+        downJacket.setName("轻薄羽绒服");
+        downJacket.setBrand("优衣库");
+        downJacket.setType(Clothing.ClothingType.OUTERWEAR);
+        downJacket.setColors(Arrays.asList("深蓝色"));
+        downJacket.setSeasons(Arrays.asList(
+                Clothing.Season.WINTER
+        ));
+        downJacket.setTags(Arrays.asList("保暖", "轻薄", "户外"));
+        downJacket.setNotes("冬季必备，保暖且轻便");
+        sampleClothes.add(downJacket);
+        
+        // 示例4: 连衣裙
+        Clothing dress = new Clothing();
+        dress.setName("碎花连衣裙");
+        dress.setBrand("ZARA");
+        dress.setType(Clothing.ClothingType.DRESS);
+        dress.setColors(Arrays.asList("红色", "白色"));
+        dress.setSeasons(Arrays.asList(
+                Clothing.Season.SPRING,
+                Clothing.Season.SUMMER
+        ));
+        dress.setTags(Arrays.asList("甜美", "约会", "度假"));
+        dress.setNotes("非常适合春夏季节的约会穿着");
+        dress.setFavorite(true);
+        sampleClothes.add(dress);
+        
+        // 示例5: 运动鞋
+        Clothing sneakers = new Clothing();
+        sneakers.setName("轻便跑鞋");
+        sneakers.setBrand("耐克");
+        sneakers.setType(Clothing.ClothingType.SHOES);
+        sneakers.setColors(Arrays.asList("白色", "灰色"));
+        sneakers.setSeasons(Arrays.asList(
+                Clothing.Season.ALL_SEASON
+        ));
+        sneakers.setTags(Arrays.asList("运动", "舒适", "休闲"));
+        sneakers.setNotes("非常舒适的日常跑步鞋");
+        sampleClothes.add(sneakers);
+        
+        // 示例6: 包包
+        Clothing bag = new Clothing();
+        bag.setName("小号斜挎包");
+        bag.setBrand("Coach");
+        bag.setType(Clothing.ClothingType.BAG);
+        bag.setColors(Arrays.asList("棕色"));
+        bag.setSeasons(Arrays.asList(
+                Clothing.Season.ALL_SEASON
+        ));
+        bag.setTags(Arrays.asList("简约", "实用", "百搭"));
+        bag.setNotes("日常通勤必备单品");
+        sampleClothes.add(bag);
+        
+        return sampleClothes;
     }
 }
 
