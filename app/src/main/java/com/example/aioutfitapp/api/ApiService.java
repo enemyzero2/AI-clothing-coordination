@@ -48,7 +48,7 @@ public interface ApiService {
      * @param loginRequest 登录请求(用户名/邮箱和密码)
      * @return 登录响应(包含用户信息和token)
      */
-    @POST("users/login")
+    @POST("auth/login")
     Call<LoginResponse> login(@Body LoginRequest loginRequest);
     
     /**
@@ -57,7 +57,7 @@ public interface ApiService {
      * @param registerRequest 注册请求(用户名、邮箱、密码等)
      * @return 注册响应(包含用户信息和token)
      */
-    @POST("users/register")
+    @POST("auth/register")
     Call<RegisterResponse> register(@Body RegisterRequest registerRequest);
     
     /**

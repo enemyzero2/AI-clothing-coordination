@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许本地开发服务器的HTTP明文通信 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- 模拟器内访问的本地IP -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- 实际设备上可能使用的IP -->
+        <domain includeSubdomains="true">10.0.0.2</domain>
+        <!-- 开发电脑的实际IP地址 -->
+        <domain includeSubdomains="true">10.29.206.148</domain>
+        <!-- 本地回环地址 -->
+        <domain includeSubdomains="true">localhost</domain>
+        <!-- 如果有其他需要的IP或域名，也可以添加在这里 -->
+    </domain-config>
+</network-security-config> 

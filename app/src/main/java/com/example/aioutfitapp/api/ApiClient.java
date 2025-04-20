@@ -19,8 +19,11 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * 配置和创建Retrofit实例，提供API服务接口
  */
 public class ApiClient {
-    // 基础URL，需要修改为实际的后端服务器地址
-    private static final String BASE_URL = "https://api.example.com/v1/";
+    // 基础URL，指向本地后端服务器
+    // 模拟器使用10.0.2.2，真机使用开发电脑的实际IP地址
+    // private static final String BASE_URL = "http://10.0.2.2:8080/api/";
+    // private static final String BASE_URL = "http://10.0.0.2:8080/api/";
+    private static final String BASE_URL = "http://10.29.206.148:8080/api/";
     
     // 认证令牌（登录后由服务器返回）
     private static String authToken = null;

@@ -27,8 +27,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
+import com.example.aioutfitapp.api.ApiClient;
+import com.example.aioutfitapp.api.ApiService;
+import com.example.aioutfitapp.api.models.LoginRequest;
+import com.example.aioutfitapp.api.models.LoginResponse;
+
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * 登录页面活动
@@ -55,6 +64,7 @@ public class LoginActivity extends AppCompatActivity {
     private TextView forgotPassword;
     private CheckBox rememberMe;
     private TextView welcomeText;
+    private TextView registerLink;
 
     // 动画状态
     private boolean isNightMode = false;
@@ -62,14 +72,16 @@ public class LoginActivity extends AppCompatActivity {
     private AnimatorSet cloudAnimatorSet;
     private AnimatorSet dayNightAnimatorSet;
     
-    // 测试用的预设用户名和密码
-    private static final String DEMO_USERNAME = "test";
-    private static final String DEMO_PASSWORD = "password123";
+    // API服务
+    private ApiService apiService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        // 初始化API服务
+        apiService = ApiClient.getApiService();
 
         // 初始化视图
         backgroundView = findViewById(R.id.background_view);
@@ -87,6 +99,7 @@ public class LoginActivity extends AppCompatActivity {
         forgotPassword = findViewById(R.id.forgot_password);
         rememberMe = findViewById(R.id.remember_me);
         welcomeText = findViewById(R.id.welcome_text);
+        registerLink = findViewById(R.id.register_link);
 
         // 设置初始位置
         nearClouds.setTranslationX(0);
@@ -161,27 +174,31 @@ public class LoginActivity extends AppCompatActivity {
                 // 增加模糊效果
                 animateBlurEffect(true);
                 
-                // 模拟登录过程
+                // 开始登录过程
                 loginButton.setText("登录中...");
                 loginButton.setEnabled(false);
                 
                 // 调试日志
                 Log.d(TAG, "正在尝试登录: " + usernameInput.getText().toString());
                 
-                // 模拟网络延迟
-                loginButton.postDelayed(() -> {
-                    // 验证用户名和密码
-                    attemptLogin(
-                        usernameInput.getText().toString(),
-                        passwordInput.getText().toString()
-                    );
-                }, 1500);
+                // 调用API服务登录
+                attemptLogin(
+                    usernameInput.getText().toString(),
+                    passwordInput.getText().toString()
+                );
             }
         });
         
         // 忘记密码点击事件
         forgotPassword.setOnClickListener(v -> {
             Toast.makeText(LoginActivity.this, "密码重置功能即将推出", Toast.LENGTH_SHORT).show();
+        });
+        
+        // 注册链接点击事件
+        registerLink.setOnClickListener(v -> {
+            // 跳转到注册页面
+            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(intent);
         });
     }
     
@@ -225,37 +242,83 @@ public class LoginActivity extends AppCompatActivity {
      * @param password 密码
      */
     private void attemptLogin(String username, String password) {
-        // 这里应该连接到实际的认证服务
-        // 目前使用预设的测试账号进行演示
+        // 创建登录请求
+        LoginRequest loginRequest = new LoginRequest(username, password);
         
-        if (DEMO_USERNAME.equals(username) && DEMO_PASSWORD.equals(password)) {
-            // 登录成功
-            Log.d(TAG, "登录成功");
-            Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show();
+        // 调用API进行登录
+        Call<LoginResponse> call = apiService.login(loginRequest);
+        call.enqueue(new Callback<LoginResponse>() {
+            @Override
+            public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
+                // 重置状态
+                loginButton.setText("登录");
+                loginButton.setEnabled(true);
+                animateBlurEffect(false);
+                
+                if (response.isSuccessful() && response.body() != null) {
+                    LoginResponse loginResponse = response.body();
+                    
+                    if (loginResponse.isSuccess()) {
+                        // 登录成功
+                        Log.d(TAG, "登录成功: " + loginResponse.getMessage());
+                        Toast.makeText(LoginActivity.this, "登录成功", Toast.LENGTH_SHORT).show();
+                        
+                        // 保存认证令牌
+                        ApiClient.setAuthToken(loginResponse.getToken());
+                        
+                        // 跳转到主页
+                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                        intent.putExtra("username", loginResponse.getUser().getUsername());
+                        startActivity(intent);
+                        finish(); // 关闭登录页面
+                    } else {
+                        // 登录失败
+                        Log.d(TAG, "登录失败: " + loginResponse.getMessage());
+                        Toast.makeText(LoginActivity.this, loginResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                        
+                        // 显示错误提示
+                        passwordInput.setError("用户名或密码错误");
+                        
+                        // 震动动画表示错误
+                        ObjectAnimator.ofFloat(loginButton, "translationX", 0, -15, 15, -15, 15, -10, 10, -5, 5, 0)
+                            .setDuration(500)
+                            .start();
+                    }
+                } else {
+                    // API请求失败
+                    Log.e(TAG, "API请求失败: " + response.code());
+                    Toast.makeText(LoginActivity.this, "网络错误，请稍后再试", Toast.LENGTH_SHORT).show();
+                    
+                    // 显示错误提示
+                    passwordInput.setError("网络错误，请稍后再试");
+                    
+                    // 震动动画表示错误
+                    ObjectAnimator.ofFloat(loginButton, "translationX", 0, -15, 15, -15, 15, -10, 10, -5, 5, 0)
+                        .setDuration(500)
+                        .start();
+                }
+            }
             
-            // 跳转到主界面
-            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-            intent.putExtra("username", username);
-            startActivity(intent);
-            finish(); // 关闭登录页面
-        } else {
-            // 登录失败
-            Log.d(TAG, "登录失败: 用户名或密码错误");
-            Toast.makeText(this, "用户名或密码错误", Toast.LENGTH_SHORT).show();
-            
-            // 重置状态
-            loginButton.setText("登录");
-            loginButton.setEnabled(true);
-            animateBlurEffect(false);
-            
-            // 显示错误提示
-            passwordInput.setError("用户名或密码错误");
-            
-            // 震动动画表示错误
-            ObjectAnimator.ofFloat(loginButton, "translationX", 0, -15, 15, -15, 15, -10, 10, -5, 5, 0)
-                .setDuration(500)
-                .start();
-        }
+            @Override
+            public void onFailure(Call<LoginResponse> call, Throwable t) {
+                // 网络请求失败
+                Log.e(TAG, "网络请求失败", t);
+                Toast.makeText(LoginActivity.this, "网络请求失败: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                
+                // 重置状态
+                loginButton.setText("登录");
+                loginButton.setEnabled(true);
+                animateBlurEffect(false);
+                
+                // 显示错误提示
+                passwordInput.setError("网络连接失败");
+                
+                // 震动动画表示错误
+                ObjectAnimator.ofFloat(loginButton, "translationX", 0, -15, 15, -15, 15, -10, 10, -5, 5, 0)
+                    .setDuration(500)
+                    .start();
+            }
+        });
     }
 
     /**
