@@ -24,6 +24,7 @@ import java.util.List;
 
 import com.example.aioutfitapp.model.Clothing;
 import com.example.aioutfitapp.model.WardrobeManager;
+import com.example.aioutfitapp.network.LinphoneManager;
 
 /**
  * 应用程序主界面
@@ -53,6 +54,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // 初始化LinphoneManager
+        initLinphoneManager();
         
         // 初始化视图
         outfitPager = findViewById(R.id.outfit_pager);
@@ -201,25 +205,12 @@ public class MainActivity extends AppCompatActivity {
         // 添加通话功能按钮点击事件，跳转到通话界面
         callFunctionBtn.setOnClickListener(v -> {
             try {
-                String userId = "user123"; // 示例用户ID，实际应从登录用户信息中获取
-                String roomId = "room" + System.currentTimeMillis(); // 生成随机房间ID
-                
-                Log.d(TAG, "准备启动通话活动");
-                
-                // 使用显式Intent，明确指定完整的类名
-                Intent intent = new Intent(this, com.example.aioutfitapp.CallActivity.class);
-                
-                // 添加必要的传参
-                intent.putExtra("call_type", 1); // 视频通话类型
-                intent.putExtra("caller_id", userId);
-                intent.putExtra("is_incoming", false);
-                intent.putExtra("room_id", roomId);
-                
+                // 跳转到联系人列表页面
+                Intent intent = new Intent(this, ContactsActivity.class);
                 startActivity(intent);
-                Log.d(TAG, "通话活动启动成功");
             } catch (Exception e) {
-                Log.e(TAG, "启动通话活动失败", e);
-                Toast.makeText(this, "启动通话功能失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Log.e(TAG, "启动联系人活动失败", e);
+                Toast.makeText(this, "启动联系人功能失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -340,6 +331,24 @@ public class MainActivity extends AppCompatActivity {
         sampleClothes.add(bag);
         
         return sampleClothes;
+    }
+
+    /**
+     * 初始化LinphoneManager
+     */
+    private void initLinphoneManager() {
+        try {
+            Log.d(TAG, "初始化LinphoneManager");
+            // 获取LinphoneManager实例并初始化
+            LinphoneManager linphoneManager = LinphoneManager.getInstance();
+            if (linphoneManager.getCore() == null) {
+                linphoneManager.init(this);
+                linphoneManager.start();
+                Log.d(TAG, "LinphoneManager初始化成功");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "初始化LinphoneManager失败", e);
+        }
     }
 }
 

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  asterisk:
+    image: bitnami/asterisk:latest
+    container_name: asterisk-debug
+    ports:
+      - "5060:5060/udp"    # SIP UDP
+      - "5060:5060/tcp"    # SIP TCP 
+      - "5061:5061/tcp"    # SIP TLS
+      - "10000-10100:10000-10100/udp"  # RTP 媒体流端口范围
+    volumes:
+      # 使用简化配置
+      - ./asterisk/simple-pjsip.conf:/opt/bitnami/asterisk/etc/asterisk/pjsip.conf
+      - ./asterisk/extensions.conf:/opt/bitnami/asterisk/etc/asterisk/extensions.conf  
+    environment:
+      - TZ=Asia/Shanghai
+      - EXTERNAL_IP=${EXTERNAL_IP}
+    restart: unless-stopped
+    # 使用交互模式启动容器
+    command: /bin/bash -c "exec /opt/bitnami/asterisk/sbin/asterisk -cvvvvv" 

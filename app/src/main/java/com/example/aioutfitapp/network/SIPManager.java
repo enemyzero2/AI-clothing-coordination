@@ -1,4 +1,4 @@
- package com.example.aioutfitapp.network;
+package com.example.aioutfitapp.network;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -40,6 +40,18 @@ public class SIPManager {
     private String domain;
     private String password;
     
+    // SIP服务器配置
+    // 本地开发环境配置
+    private String sipDomain = "aioutfitapp.local";  // 本地Kamailio域名
+    private String sipServerAddress = "10.0.2.2";    // 模拟器访问宿主机的IP地址
+                                                    // 如果使用真机测试，请将此地址改为电脑的实际IP地址
+                                                    // 注意：这应该是运行Docker的主机IP，不是Docker容器内部IP
+    private int sipServerPort = 5062;               // Kamailio默认SIP端口
+    
+    // 默认测试用户
+    private static final String DEFAULT_USERNAME = "test";
+    private static final String DEFAULT_PASSWORD = "test123";
+    
     /**
      * 获取单例实例
      */
@@ -58,7 +70,7 @@ public class SIPManager {
     }
     
     /**
-     * 初始化SIP管理器
+     * 初始化SIP管理器（使用提供的账号信息）
      */
     public boolean initialize(String username, String domain, String password, SIPStateListener listener) {
         this.username = username;
@@ -66,6 +78,26 @@ public class SIPManager {
         this.password = password;
         this.sipStateListener = listener;
         
+        return initializeSIP();
+    }
+    
+    /**
+     * 初始化SIP管理器（使用默认测试账号）
+     */
+    public boolean initialize(SIPStateListener listener) {
+        this.username = DEFAULT_USERNAME;
+        this.domain = sipDomain;
+        this.password = DEFAULT_PASSWORD;
+        this.sipStateListener = listener;
+        
+        Log.d(TAG, "使用默认测试账号: " + username + "@" + domain);
+        return initializeSIP();
+    }
+    
+    /**
+     * SIP初始化通用逻辑
+     */
+    private boolean initializeSIP() {
         // 检查设备是否支持SIP
         if (!android.net.sip.SipManager.isVoipSupported(context)) {
             Log.e(TAG, "设备不支持SIP VOIP");
@@ -124,8 +156,16 @@ public class SIPManager {
                 return;
             }
             
+            Log.d(TAG, "创建SIP配置 - 用户名: " + username + ", 域名: " + domain + 
+                   ", 服务器: " + sipServerAddress + ":" + sipServerPort);
+            
             SipProfile.Builder builder = new SipProfile.Builder(username, domain);
             builder.setPassword(password);
+            builder.setAutoRegistration(true);
+            
+            // 设置SIP服务器地址和端口
+            builder.setOutboundProxy(sipServerAddress + ":" + sipServerPort);
+            builder.setSendKeepAlive(true);
             builder.setAutoRegistration(true);
             
             sipProfile = builder.build();
@@ -180,7 +220,7 @@ public class SIPManager {
     }
     
     /**
-     * 发起通话
+     * 发起通话（指定完整SIP地址）
      */
     public void makeCall(String sipAddress, SipAudioCall.Listener listener) {
         if (sipManager == null || sipProfile == null) {
@@ -192,51 +232,9 @@ public class SIPManager {
         }
         
         try {
-            SipAudioCall.Listener callListener = new SipAudioCall.Listener() {
-                @Override
-                public void onCallEstablished(SipAudioCall call) {
-                    // 通话建立后启用扬声器
-                    call.setSpeakerMode(true);
-                    call.startAudio();
-                    
-                    if (listener != null) {
-                        listener.onCallEstablished(call);
-                    }
-                    
-                    if (sipStateListener != null) {
-                        sipStateListener.onCallEstablished();
-                    }
-                    
-                    Log.d(TAG, "通话已建立");
-                }
-                
-                @Override
-                public void onCallEnded(SipAudioCall call) {
-                    if (listener != null) {
-                        listener.onCallEnded(call);
-                    }
-                    
-                    if (sipStateListener != null) {
-                        sipStateListener.onCallEnded();
-                    }
-                    
-                    Log.d(TAG, "通话已结束");
-                }
-                
-                @Override
-                public void onError(SipAudioCall call, int errorCode, String errorMessage) {
-                    if (listener != null) {
-                        listener.onError(call, errorCode, errorMessage);
-                    }
-                    
-                    if (sipStateListener != null) {
-                        sipStateListener.onError("通话错误: " + errorMessage);
-                    }
-                    
-                    Log.e(TAG, "通话错误: " + errorMessage);
-                }
-            };
+            SipAudioCall.Listener callListener = createCallListener(listener);
             
+            Log.d(TAG, "发起通话到: " + sipAddress);
             call = sipManager.makeAudioCall(sipProfile.getUriString(), sipAddress, callListener, 30);
             
         } catch (Exception e) {
@@ -245,6 +243,66 @@ public class SIPManager {
                 sipStateListener.onError("发起通话失败: " + e.getMessage());
             }
         }
+    }
+    
+    /**
+     * 发起通话到测试用户（使用用户名）
+     * 
+     * 例如: makeCallToTestUser("alice") 将拨打 sip:alice@aioutfitapp.local
+     */
+    public void makeCallToTestUser(String username, SipAudioCall.Listener listener) {
+        String sipUri = "sip:" + username + "@" + sipDomain;
+        makeCall(sipUri, listener);
+    }
+    
+    /**
+     * 创建通话监听器
+     */
+    private SipAudioCall.Listener createCallListener(SipAudioCall.Listener listener) {
+        return new SipAudioCall.Listener() {
+            @Override
+            public void onCallEstablished(SipAudioCall call) {
+                // 通话建立后启用扬声器
+                call.setSpeakerMode(true);
+                call.startAudio();
+                
+                if (listener != null) {
+                    listener.onCallEstablished(call);
+                }
+                
+                if (sipStateListener != null) {
+                    sipStateListener.onCallEstablished();
+                }
+                
+                Log.d(TAG, "通话已建立");
+            }
+            
+            @Override
+            public void onCallEnded(SipAudioCall call) {
+                if (listener != null) {
+                    listener.onCallEnded(call);
+                }
+                
+                if (sipStateListener != null) {
+                    sipStateListener.onCallEnded();
+                }
+                
+                Log.d(TAG, "通话已结束");
+            }
+            
+            @Override
+            public void onError(SipAudioCall call, int errorCode, String errorMessage) {
+                if (listener != null) {
+                    listener.onError(call, errorCode, errorMessage);
+                }
+                
+                if (sipStateListener != null) {
+                    sipStateListener.onError("通话错误: " + errorMessage);
+                }
+                
+                Log.e(TAG, "通话错误: " + errorMessage);
+            }
+        };
     }
     
     /**
@@ -369,5 +427,31 @@ public class SIPManager {
                 }
             }
         }
+    }
+    
+    /**
+     * 设置SIP服务器配置
+     * 在生产环境中使用实际服务器地址和配置
+     */
+    public void setSipServerConfig(String domain, String serverAddress, int port) {
+        this.sipDomain = domain;
+        this.sipServerAddress = serverAddress;
+        this.sipServerPort = port;
+        
+        Log.d(TAG, "设置SIP服务器配置 - 域名: " + domain + ", 服务器: " + serverAddress + ":" + port);
+    }
+    
+    /**
+     * 获取当前使用的SIP域名
+     */
+    public String getSipDomain() {
+        return sipDomain;
+    }
+    
+    /**
+     * 获取SIP服务器地址
+     */
+    public String getSipServerAddress() {
+        return sipServerAddress;
     }
 }

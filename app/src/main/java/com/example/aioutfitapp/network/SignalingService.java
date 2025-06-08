@@ -1,4 +1,4 @@
- package com.example.aioutfitapp.network;
+package com.example.aioutfitapp.network;
 
 import android.content.Context;
 import android.os.Handler;
@@ -13,6 +13,7 @@ import org.webrtc.SessionDescription;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
+import com.example.aioutfitapp.api.ApiClient;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -85,10 +86,21 @@ public class SignalingService {
         client = builder.build();
         
         try {
-            // 创建WebSocket请求
-            Request request = new Request.Builder()
-                    .url(serverUrl)
-                    .build();
+            // 创建WebSocket请求，添加JWT认证头
+            Request.Builder requestBuilder = new Request.Builder()
+                    .url(serverUrl);
+            
+            // 从ApiClient获取JWT认证令牌并添加到请求头
+            String authToken = ApiClient.getAuthToken();
+            if (authToken != null && !authToken.isEmpty()) {
+                Log.d(TAG, "添加JWT认证头到WebSocket连接");
+                requestBuilder.header("Authorization", "Bearer " + authToken);
+            } else {
+                Log.w(TAG, "未找到JWT认证令牌，WebSocket连接可能会被拒绝");
+            }
+            
+            // 创建最终请求
+            Request request = requestBuilder.build();
             
             // 连接WebSocket
             webSocket = client.newWebSocket(request, new WebSocketListener() {
@@ -182,11 +194,24 @@ public class SignalingService {
                 
                 @Override
                 public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-                    Log.e(TAG, "WebSocket连接失败: " + t.getMessage());
+                    if (response != null) {
+                        Log.e(TAG, "WebSocket连接失败: " + t.getMessage() + ", 状态码: " + response.code());
+                    } else {
+                        Log.e(TAG, "WebSocket连接失败: " + t.getMessage());
+                    }
                     isConnected = false;
                     
                     if (listener != null) {
-                        mainHandler.post(() -> listener.onError("WebSocket连接失败: " + t.getMessage()));
+                        // 创建最终变量以在lambda表达式中使用
+                        final String errorMsg;
+                        if (response != null && response.code() == 401) {
+                            errorMsg = "WebSocket连接失败: 认证失败，请确保您已登录";
+                        } else if (t != null) {
+                            errorMsg = "WebSocket连接失败: " + t.getMessage();
+                        } else {
+                            errorMsg = "WebSocket连接失败";
+                        }
+                        mainHandler.post(() -> listener.onError(errorMsg));
                     }
                 }
             });

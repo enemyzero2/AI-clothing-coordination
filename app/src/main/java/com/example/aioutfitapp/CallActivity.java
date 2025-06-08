@@ -23,8 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.example.aioutfitapp.R;
-import com.example.aioutfitapp.network.CallManager;
+import com.example.aioutfitapp.network.LinphoneManager;
 import com.example.aioutfitapp.network.NetworkSimulator;
 
 import org.webrtc.SurfaceViewRenderer;
@@ -34,7 +33,7 @@ import org.webrtc.SurfaceViewRenderer;
  * 
  * 负责显示音视频通话界面，处理通话相关的用户交互
  */
-public class CallActivity extends AppCompatActivity implements CallManager.CallManagerListener {
+public class CallActivity extends AppCompatActivity implements LinphoneManager.LinphoneManagerListener {
     
     private static final String TAG = "CallActivity";
     
@@ -51,12 +50,13 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.USE_SIP,
-            Manifest.permission.INTERNET
+            Manifest.permission.INTERNET,
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.MODIFY_AUDIO_SETTINGS
     };
     
     // 通话管理器
-    private CallManager callManager;
+    private LinphoneManager linphoneManager;
     
     // UI组件
     private SurfaceViewRenderer localVideoView;
@@ -126,7 +126,7 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
         
         // 获取Intent参数
         Intent intent = getIntent();
-        callType = intent.getIntExtra(EXTRA_CALL_TYPE, CallManager.CALL_TYPE_AUDIO);
+        callType = intent.getIntExtra(EXTRA_CALL_TYPE, LinphoneManager.CALL_TYPE_AUDIO);
         callerId = intent.getStringExtra(EXTRA_CALLER_ID);
         isIncoming = intent.getBooleanExtra(EXTRA_IS_INCOMING, false);
         roomId = intent.getStringExtra(EXTRA_ROOM_ID);
@@ -177,7 +177,7 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
         videoToggleButton.setOnClickListener(v -> onToggleVideo());
         
         // 根据通话类型显示/隐藏视频控件
-        if (callType == CallManager.CALL_TYPE_VIDEO) {
+        if (callType == LinphoneManager.CALL_TYPE_VIDEO) {
             localVideoView.setVisibility(View.VISIBLE);
             remoteVideoView.setVisibility(View.VISIBLE);
             videoCallControls.setVisibility(View.VISIBLE);
@@ -205,58 +205,50 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
      * 初始化通话管理器
      */
     private void initCallManager() {
-        try {
-            callManager = CallManager.getInstance(this);
-            callManager.setListener(this);
-            
-            // 初始化网络模拟器，使用4G网络
-            callManager.startNetworkSimulation(NetworkSimulator.NETWORK_TYPE_4G);
-            
-            if (callType == CallManager.CALL_TYPE_VIDEO) {
-                try {
-                    // 初始化WebRTC
-                    if (!callManager.initializeWebRTC(localVideoView, remoteVideoView)) {
-                        Log.e(TAG, "初始化WebRTC失败");
-                        Toast.makeText(this, "初始化WebRTC失败", Toast.LENGTH_SHORT).show();
-                        finish();
-                        return;
-                    }
-                    
-                    // 如果是拨出电话，开始拨号
-                    if (!isIncoming) {
-                        callManager.makeVideoCall(callerId, roomId);
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "WebRTC初始化或视频通话过程中出错", e);
-                    Toast.makeText(this, "视频通话初始化失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    finish();
-                    return;
-                }
-            } else {
-                try {
-                    // 初始化SIP
-                    if (!callManager.initializeSIP("user", "example.com", "password")) {
-                        Log.e(TAG, "初始化SIP失败");
-                        Toast.makeText(this, "初始化SIP失败", Toast.LENGTH_SHORT).show();
-                        finish();
-                        return;
-                    }
-                    
-                    // 如果是拨出电话，开始拨号
-                    if (!isIncoming) {
-                        callManager.makeAudioCall(callerId);
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "SIP初始化或音频通话过程中出错", e);
-                    Toast.makeText(this, "音频通话初始化失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    finish();
-                    return;
-                }
+        // 获取LinphoneManager实例
+        linphoneManager = LinphoneManager.getInstance();
+        
+        Log.d(TAG, "初始化通话界面 - 类型: " + (callType == LinphoneManager.CALL_TYPE_VIDEO ? "视频通话" : "音频通话") + 
+                ", 来电者: " + callerId + ", 是否来电: " + isIncoming);
+        
+        // 设置监听器
+        linphoneManager.setListener(this);
+        
+        // 根据通话类型初始化视频视图
+        if (callType == LinphoneManager.CALL_TYPE_VIDEO) {
+            try {
+                // 初始化视频视图
+                localVideoView.init(null, null);
+                remoteVideoView.init(null, null);
+                
+                Log.d(TAG, "初始化视频视图成功");
+            } catch (Exception e) {
+                Log.e(TAG, "初始化视频视图失败: " + e.getMessage(), e);
+                Toast.makeText(this, "初始化视频失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
-        } catch (Exception e) {
-            Log.e(TAG, "通话管理器初始化失败", e);
-            Toast.makeText(this, "通话功能暂时不可用: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            finish();
+        }
+        
+        // 处理来电或拨出电话
+        if (isIncoming) {
+            // 对于来电，不需要额外操作，等待用户接听或拒绝
+            Log.d(TAG, "等待用户接听或拒绝来电");
+        } else {
+            Log.d(TAG, "正在发起呼叫到: " + callerId);
+            
+            // 检查是否注册到SIP服务器
+            if (!linphoneManager.isRegistered()) {
+                Log.e(TAG, "未注册到SIP服务器，无法发起呼叫");
+                Toast.makeText(this, "未注册到SIP服务器，请先登录", Toast.LENGTH_LONG).show();
+                new Handler().postDelayed(this::finish, 2000);
+                return;
+            }
+            
+            // 发起呼叫
+            if (callType == LinphoneManager.CALL_TYPE_VIDEO) {
+                linphoneManager.makeVideoCall(callerId);
+            } else {
+                linphoneManager.makeAudioCall(callerId);
+            }
         }
     }
     
@@ -354,14 +346,20 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
      * 接听电话
      */
     private void onAnswerCall() {
-        callManager.answerCall();
+        Log.d(TAG, "接听来电");
+        if (linphoneManager != null) {
+            linphoneManager.answerCall();
+        }
     }
     
     /**
      * 拒绝电话
      */
     private void onRejectCall() {
-        callManager.rejectCall();
+        Log.d(TAG, "拒绝来电");
+        if (linphoneManager != null) {
+            linphoneManager.rejectCall();
+        }
         finish();
     }
     
@@ -369,8 +367,10 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
      * 结束通话
      */
     private void onEndCall() {
-        callManager.endCall();
-        finish();
+        Log.d(TAG, "结束通话");
+        if (linphoneManager != null) {
+            linphoneManager.endCall();
+        }
     }
     
     /**
@@ -378,13 +378,15 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
      */
     private void onToggleMute() {
         isMuted = !isMuted;
-        callManager.setMicEnabled(!isMuted);
+        Log.d(TAG, "麦克风: " + (isMuted ? "已静音" : "已取消静音"));
+        
+        if (linphoneManager != null) {
+            linphoneManager.setMicrophoneMuted(isMuted);
+        }
         
         // 更新UI
         muteButton.setImageResource(isMuted ? 
                 R.drawable.ic_mic_off : R.drawable.ic_mic_on);
-        
-        Toast.makeText(this, isMuted ? "已静音" : "已取消静音", Toast.LENGTH_SHORT).show();
     }
     
     /**
@@ -392,25 +394,24 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
      */
     private void onToggleSpeaker() {
         isSpeakerOn = !isSpeakerOn;
+        Log.d(TAG, "扬声器: " + (isSpeakerOn ? "已开启" : "已关闭"));
         
-        // 设置音频输出
-        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setSpeakerphoneOn(isSpeakerOn);
+        if (linphoneManager != null) {
+            linphoneManager.setSpeakerEnabled(isSpeakerOn);
+        }
         
         // 更新UI
         speakerButton.setImageResource(isSpeakerOn ? 
                 R.drawable.ic_speaker_on : R.drawable.ic_speaker_off);
-        
-        Toast.makeText(this, isSpeakerOn ? "已开启扬声器" : "已关闭扬声器", Toast.LENGTH_SHORT).show();
     }
     
     /**
      * 切换摄像头
      */
     private void onSwitchCamera() {
-        if (callType == CallManager.CALL_TYPE_VIDEO) {
-            callManager.switchCamera();
-            Toast.makeText(this, "已切换摄像头", Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "切换摄像头");
+        if (linphoneManager != null) {
+            linphoneManager.switchCamera();
         }
     }
     
@@ -418,76 +419,113 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
      * 切换视频状态
      */
     private void onToggleVideo() {
-        if (callType == CallManager.CALL_TYPE_VIDEO) {
-            isVideoEnabled = !isVideoEnabled;
-            callManager.setVideoEnabled(isVideoEnabled);
-            
-            // 更新UI
-            videoToggleButton.setImageResource(isVideoEnabled ? 
-                    R.drawable.ic_video_on : R.drawable.ic_video_off);
-            
-            if (isVideoEnabled) {
-                localVideoView.setVisibility(View.VISIBLE);
-            } else {
-                localVideoView.setVisibility(View.INVISIBLE);
-            }
-            
-            Toast.makeText(this, isVideoEnabled ? "已开启视频" : "已关闭视频", Toast.LENGTH_SHORT).show();
+        isVideoEnabled = !isVideoEnabled;
+        Log.d(TAG, "视频: " + (isVideoEnabled ? "已启用" : "已禁用"));
+        
+        if (linphoneManager != null) {
+            linphoneManager.setVideoEnabled(isVideoEnabled);
+        }
+        
+        // 更新UI
+        videoToggleButton.setImageResource(isVideoEnabled ? 
+                R.drawable.ic_video_on : R.drawable.ic_video_off);
+        
+        // 显示或隐藏视频视图
+        if (isVideoEnabled) {
+            localVideoView.setVisibility(View.VISIBLE);
+            remoteVideoView.setVisibility(View.VISIBLE);
+            callerAvatarView.setVisibility(View.GONE);
+        } else {
+            localVideoView.setVisibility(View.GONE);
+            remoteVideoView.setVisibility(View.GONE);
+            callerAvatarView.setVisibility(View.VISIBLE);
+        }
+        
+        // 开始网络质量监测
+        if (networkQualityHandler != null && networkQualityRunnable != null) {
+            networkQualityHandler.post(networkQualityRunnable);
         }
     }
     
-    // CallManager.CallManagerListener 接口实现
+    // LinphoneManager.LinphoneManagerListener 接口实现
     
     @Override
     public void onCallStateChanged(int state) {
-        switch (state) {
-            case CallManager.CALL_STATE_CONNECTING:
-                callStateView.setText("正在连接...");
-                break;
-            case CallManager.CALL_STATE_RINGING:
-                callStateView.setText("正在响铃...");
-                break;
-            case CallManager.CALL_STATE_CONNECTED:
-                callStateView.setText("通话中");
-                
-                // 显示通话时长计时器
-                callDurationView.setVisibility(View.VISIBLE);
-                callDurationView.setBase(SystemClock.elapsedRealtime());
-                callDurationView.start();
-                
-                // 隐藏来电控制区，显示通话中控制区
-                incomingCallControls.setVisibility(View.GONE);
-                ongoingCallControls.setVisibility(View.VISIBLE);
-                break;
-            case CallManager.CALL_STATE_ENDED:
-                callStateView.setText("通话已结束");
-                
-                // 停止计时器
-                callDurationView.stop();
-                
-                // 延迟关闭界面
-                new Handler().postDelayed(this::finish, 1000);
-                break;
-        }
+        runOnUiThread(() -> {
+            // 更新通话状态UI
+            switch (state) {
+                case LinphoneManager.CALL_STATE_CONNECTING:
+                    callStateView.setText("正在连接...");
+                    Log.d(TAG, "通话状态: 正在连接");
+                    break;
+                case LinphoneManager.CALL_STATE_RINGING:
+                    callStateView.setText("振铃中...");
+                    Log.d(TAG, "通话状态: 振铃中");
+                    break;
+                case LinphoneManager.CALL_STATE_CONNECTED:
+                    callStateView.setText("通话中");
+                    Log.d(TAG, "通话状态: 已连接");
+                    
+                    // 显示通话控制按钮
+                    incomingCallControls.setVisibility(View.GONE);
+                    ongoingCallControls.setVisibility(View.VISIBLE);
+                    
+                    // 启动计时器
+                    callDurationView.setVisibility(View.VISIBLE);
+                    callDurationView.setBase(SystemClock.elapsedRealtime());
+                    callDurationView.start();
+                    
+                    // 如果是视频通话，设置视频视图
+                    if (callType == LinphoneManager.CALL_TYPE_VIDEO && linphoneManager.isVideoEnabled()) {
+                        localVideoView.setVisibility(View.VISIBLE);
+                        remoteVideoView.setVisibility(View.VISIBLE);
+                        videoCallControls.setVisibility(View.VISIBLE);
+                        callerAvatarView.setVisibility(View.GONE);
+                        
+                        // 设置视频视图
+                        linphoneManager.setVideoWindows(localVideoView, remoteVideoView);
+                    }
+                    
+                    // 开始网络质量监测
+                    if (networkQualityHandler != null && networkQualityRunnable != null) {
+                        networkQualityHandler.post(networkQualityRunnable);
+                    }
+                    break;
+                case LinphoneManager.CALL_STATE_ENDED:
+                    callStateView.setText("通话已结束");
+                    Log.d(TAG, "通话状态: 已结束");
+                    
+                    // 停止计时器
+                    callDurationView.stop();
+                    
+                    // 停止网络质量监测
+                    if (networkQualityHandler != null && networkQualityRunnable != null) {
+                        networkQualityHandler.removeCallbacks(networkQualityRunnable);
+                    }
+                    
+                    // 延迟关闭活动
+                    new Handler().postDelayed(this::finish, 1500);
+                    break;
+            }
+        });
     }
     
     @Override
     public void onIncomingCall(String callerId, int callType) {
-        // 在这个活动中，应该已经知道有来电了，所以不需要处理
+        // 在已开启的CallActivity中不需要处理
+        Log.d(TAG, "收到来电: " + callerId + ", 类型: " + callType);
     }
     
     @Override
-    public void onMessage(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    public void onRegistered() {
+        Log.d(TAG, "SIP注册成功");
+        Toast.makeText(this, "SIP注册成功", Toast.LENGTH_SHORT).show();
     }
     
     @Override
     public void onError(String errorMessage) {
-        Toast.makeText(this, "错误: " + errorMessage, Toast.LENGTH_SHORT).show();
-        Log.e(TAG, "通话错误: " + errorMessage);
-        
-        // 出错时结束通话
-        new Handler().postDelayed(this::finish, 2000);
+        Log.e(TAG, "错误: " + errorMessage);
+        Toast.makeText(this, "错误: " + errorMessage, Toast.LENGTH_LONG).show();
     }
     
     @Override
@@ -500,8 +538,8 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
         }
         
         // 释放资源
-        if (callManager != null) {
-            callManager.release();
+        if (linphoneManager != null) {
+            linphoneManager.release();
         }
     }
 }

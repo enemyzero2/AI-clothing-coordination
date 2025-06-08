@@ -1,0 +1,40 @@
+﻿version: '3.8'
+
+services:
+  asterisk:
+    image: andrius/asterisk:latest
+    container_name: asterisk
+    ports:
+      - "5060:5060/udp"    # SIP UDP
+      - "5060:5060/tcp"    # SIP TCP
+      - "5061:5061/tcp"    # SIP TLS
+      - "10000-10100:10000-10100/udp"  # RTP 媒体流端口范围
+    volumes:
+      - ./asterisk/pjsip.conf:/etc/asterisk/pjsip.conf
+      - ./asterisk/extensions.conf:/etc/asterisk/extensions.conf
+      - ./asterisk/users.conf:/etc/asterisk/users.conf
+      - ./asterisk/modules.conf:/etc/asterisk/modules.conf
+      - ./certs:/etc/asterisk/certs
+      - asterisk_sounds:/var/lib/asterisk/sounds
+      - asterisk_moh:/var/lib/asterisk/moh
+      - asterisk_voicemail:/var/spool/asterisk/voicemail
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "asterisk -rx 'core show version' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    environment:
+      - TZ=Asia/Shanghai
+      - EXTERNAL_IP=${EXTERNAL_IP}
+    networks:
+      - sip_net
+
+networks:
+  sip_net:
+    driver: bridge
+
+volumes:
+  asterisk_sounds:
+  asterisk_moh:
+  asterisk_voicemail:

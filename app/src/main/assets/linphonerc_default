@@ -1,0 +1,42 @@
+[sip]
+guess_hostname=1
+register_only_when_network_is_up=1
+auto_net_state_mon=1
+auto_answer_replacing_calls=1
+ping_with_options=0
+use_cpim=1
+zrtp_key_agreements_suites=MS_ZRTP_KEY_AGREEMENT_K255_KYB512
+chat_messages_aggregation_delay=1000
+chat_messages_aggregation=1
+
+[sound]
+# 打开回声消除
+echocancellation=1
+# MIC 增益
+mic_gain_db=0.0
+# 回放增益
+playback_gain_db=0.0
+# 开启扬声器
+force_speaker=0
+# 启用高质量采样率
+high_ptime=0
+
+[video]
+displaytype=MSAndroidTextureDisplay
+auto_resize_preview_to_keep_ratio=1
+max_mosaic_size=vga
+capture=1
+display=1
+# 优先使用H264编码
+preferred_video_codec=H264
+
+[adaptive_rate_control]
+enabled=1
+video_up_bw=3000
+
+[misc]
+max_calls=10
+history_max_size=100
+log_collection_max_file_size=10
+log_collection_upload_server_url=https://metrics.linphone.org/submit.php
+log_collection_upload_user_id=00000000 

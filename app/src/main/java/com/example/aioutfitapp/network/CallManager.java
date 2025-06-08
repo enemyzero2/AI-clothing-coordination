@@ -1,4 +1,4 @@
- package com.example.aioutfitapp.network;
+package com.example.aioutfitapp.network;
 
 import android.content.Context;
 import android.net.sip.SipAudioCall;
@@ -80,13 +80,12 @@ public class CallManager implements
         this.mainHandler = new Handler(Looper.getMainLooper());
         
         // 初始化组件
-        // this.sipManager = com.example.aioutfitapp.network.SIPManager.getInstance(context); // 临时注释掉
+        this.sipManager = com.example.aioutfitapp.network.SIPManager.getInstance(context);
         this.webRTCHelper = new WebRTCHelper(context);
         this.signalingService = new SignalingService(context);
         this.networkSimulator = NetworkSimulator.getInstance(context);
         
         // 设置监听器
-        // this.sipManager.setListener(this); // 临时注释掉
         this.webRTCHelper.setListener(this);
         this.signalingService.setListener(this);
     }
@@ -102,9 +101,27 @@ public class CallManager implements
      * 初始化SIP服务
      */
     public boolean initializeSIP(String username, String domain, String password) {
-        // 临时注释掉SIP相关代码
-        // return sipManager.initialize(username, domain, password, this);
-        return true;
+        Log.d(TAG, "初始化SIP服务 - 用户名: " + username + ", 域名: " + domain);
+        
+        // 获取设备本地IP地址（实际应用中应该动态获取）
+        String localIp = "192.168.1.x"; // 需要替换为实际IP
+        int sipPort = 5062;
+        
+        // 配置SIP服务器
+        sipManager.setSipServerConfig(domain, localIp, sipPort);
+        
+        // 初始化SIP
+        return sipManager.initialize(username, domain, password, this);
+    }
+    
+    /**
+     * 使用默认测试账号初始化SIP服务
+     */
+    public boolean initializeDefaultSIP() {
+        String sipServerAddress = sipManager.getSipServerAddress();
+        String sipDomain = sipManager.getSipDomain();
+        Log.d(TAG, "使用默认测试账号初始化SIP服务 - 服务器地址: " + sipServerAddress + ", 域名: " + sipDomain);
+        return sipManager.initialize(this);
     }
     
     /**
@@ -144,30 +161,45 @@ public class CallManager implements
         callType = CALL_TYPE_AUDIO;
         updateCallState(CALL_STATE_CONNECTING);
         
-        /* 临时注释掉SIP相关代码
+        Log.d(TAG, "发起SIP音频通话: " + sipAddress);
+        
         sipManager.makeCall(sipAddress, new SipAudioCall.Listener() {
             @Override
             public void onCallEstablished(SipAudioCall call) {
                 super.onCallEstablished(call);
+                Log.d(TAG, "SIP通话已建立");
                 updateCallState(CALL_STATE_CONNECTED);
             }
             
             @Override
             public void onCallEnded(SipAudioCall call) {
                 super.onCallEnded(call);
+                Log.d(TAG, "SIP通话已结束");
                 updateCallState(CALL_STATE_ENDED);
             }
             
             @Override
             public void onError(SipAudioCall call, int errorCode, String errorMessage) {
                 super.onError(call, errorCode, errorMessage);
-                Log.e(TAG, "音频通话错误: " + errorMessage);
+                Log.e(TAG, "SIP音频通话错误: " + errorMessage);
                 updateCallState(CALL_STATE_ENDED);
             }
         });
-        */
-        // 临时模拟连接成功
-        updateCallState(CALL_STATE_CONNECTED);
+    }
+    
+    /**
+     * 发起音频通话到测试用户
+     */
+    public void makeAudioCallToTestUser(String username) {
+        Log.d(TAG, "发起通话到测试用户: " + username);
+        sipManager.makeCallToTestUser(username, new SipAudioCall.Listener() {
+            @Override
+            public void onCallEstablished(SipAudioCall call) {
+                super.onCallEstablished(call);
+                Log.d(TAG, "通话到测试用户已建立");
+                updateCallState(CALL_STATE_CONNECTED);
+            }
+        });
     }
     
     /**
@@ -185,7 +217,7 @@ public class CallManager implements
         updateCallState(CALL_STATE_CONNECTING);
         
         // 连接到信令服务器并创建房间
-        String serverUrl = "wss://signaling.example.com"; // 实际项目中应替换为真实的服务器地址
+        String serverUrl = "ws://10.29.206.148:8080/ws"; // 实际项目中应替换为真实的服务器地址
         signalingService.connect(serverUrl, userId, roomId);
     }
     

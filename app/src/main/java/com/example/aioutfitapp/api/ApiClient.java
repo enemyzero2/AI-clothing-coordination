@@ -23,7 +23,7 @@ public class ApiClient {
     // 模拟器使用10.0.2.2，真机使用开发电脑的实际IP地址
     // private static final String BASE_URL = "http://10.0.2.2:8080/api/";
     // private static final String BASE_URL = "http://10.0.0.2:8080/api/";
-    private static final String BASE_URL = "http://10.29.206.148:8080/api/";
+    private static final String BASE_URL = "http://10.29.206.148:8081/api/";
     
     // 认证令牌（登录后由服务器返回）
     private static String authToken = null;

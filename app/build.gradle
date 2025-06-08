@@ -60,6 +60,11 @@ dependencies {
     // WebRTC - 视频通话库
     implementation 'org.webrtc:google-webrtc:1.0.32006'
     
+    // Linphone SDK - SIP通信库
+    implementation 'org.linphone:linphone-sdk-android:5.1.0'
+    // 媒体库 - 用于响铃等
+    implementation 'androidx.media:media:1.4.0'
+    
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
