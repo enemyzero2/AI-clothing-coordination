@@ -8,7 +8,7 @@ docker-compose -f asterisk-docker-compose.yml down
 docker rm -f asterisk-debug 2>$null
 
 # 设置环境变量
-$env:EXTERNAL_IP="10.29.206.148"
+$env:EXTERNAL_IP="192.168.113.158"
 Write-Host "使用IP地址: $env:EXTERNAL_IP" -ForegroundColor Cyan
 
 # 启动调试容器

@@ -369,10 +369,17 @@ public class LinphoneManager {
     }
     
     /**
-     * 设置管理器监听器
-     * 
-     * @param listener 监听器接口实例
+     * 设置监听器
      */
+    public void setLinphoneManagerListener(LinphoneManagerListener listener) {
+        this.listener = listener;
+    }
+    
+    /**
+     * 设置监听器
+     * @deprecated 使用 setLinphoneManagerListener 代替
+     */
+    @Deprecated
     public void setListener(LinphoneManagerListener listener) {
         this.listener = listener;
     }
@@ -538,8 +545,33 @@ public class LinphoneManager {
                         
                         // 设置传输协议
                         try {
-                            serverAddress.setTransport(TransportType.Udp);
-                            Log.d(TAG, "已设置传输协议: UDP");
+                            // 根据传入的transport参数设置传输协议
+                            TransportType transportType = TransportType.Udp; // 默认UDP
+                            
+                            if (transport != null && !transport.isEmpty()) {
+                                if (transport.equalsIgnoreCase("tcp")) {
+                                    transportType = TransportType.Tcp;
+                                    Log.d(TAG, "使用TCP传输协议");
+                                } else if (transport.equalsIgnoreCase("tls")) {
+                                    transportType = TransportType.Tls;
+                                    Log.d(TAG, "使用TLS传输协议");
+                                } else if (transport.equalsIgnoreCase("udp")) {
+                                    transportType = TransportType.Udp;
+                                    Log.d(TAG, "使用UDP传输协议");
+                                } else {
+                                    Log.w(TAG, "未知传输协议: " + transport + "，使用默认UDP");
+                                }
+                            } else {
+                                Log.d(TAG, "未指定传输协议，使用默认UDP");
+                            }
+                            
+                            serverAddress.setTransport(transportType);
+                            Log.d(TAG, "已设置传输协议: " + transportType);
+                            
+                            // FreeSwitch特定设置
+                            accountParams.setPublishEnabled(false); // FreeSwitch通常不需要PUBLISH
+                            // 注意：AVPF设置在当前SDK版本中可能有不同的API，暂时移除
+                            // 如果需要设置AVPF，请查阅当前版本Linphone SDK的文档
                         } catch (Exception e) {
                             Log.e(TAG, "设置传输协议失败: " + e.getMessage());
                         }
@@ -569,10 +601,19 @@ public class LinphoneManager {
                     Log.d(TAG, "注册功能已启用");
                     
                     try {
-                        accountParams.setExpires(600);
-                        Log.d(TAG, "已设置注册超时: 600秒");
+                        // FreeSwitch配置
+                        // 设置较短的注册超时，FreeSwitch默认注册过期为3600秒
+                        accountParams.setExpires(3600);
+                        Log.d(TAG, "已设置注册超时: 3600秒");
+                        
+                        // 注意：在当前SDK版本中没有直接设置注册刷新间隔的方法
+                        // 系统会自动处理注册刷新
+                        
+                        // 设置其他FreeSwitch友好参数
+                        accountParams.setInternationalPrefix("");
+                        accountParams.setUseInternationalPrefixForCallsAndChats(false);
                     } catch (Exception e) {
-                        Log.e(TAG, "设置注册超时失败: " + e.getMessage());
+                        Log.e(TAG, "设置FreeSwitch参数失败: " + e.getMessage());
                         // 不中断流程，继续
                     }
                     
@@ -1049,7 +1090,18 @@ public class LinphoneManager {
             if (account != null) {
                 Address serverAddress = account.getParams().getServerAddress();
                 String domain = serverAddress.getDomain();
-                sipAddress = "sip:" + to + "@" + domain;
+                
+                // 处理FreeSwitch特定的格式
+                // 使用分机号/用户ID而不是完整的SIP URI
+                if (to.contains("@")) {
+                    // 已经包含域名部分的地址
+                    sipAddress = "sip:" + to;
+                } else {
+                    // 只有用户名/分机号的地址
+                    sipAddress = "sip:" + to + "@" + domain;
+                }
+                
+                Log.d(TAG, "格式化后的SIP地址: " + sipAddress);
             }
         }
         
@@ -1070,11 +1122,22 @@ public class LinphoneManager {
             if (params != null) {
                 // 设置通话参数
                 params.setVideoEnabled(withVideo);
-                params.setMediaEncryption(MediaEncryption.None);
+                params.setMediaEncryption(MediaEncryption.None); // FreeSwitch默认不加密
                 Log.d(TAG, "已设置呼叫参数: 视频=" + withVideo);
                 
-                // 如果网络带宽有限，可以启用低带宽模式
-                // params.enableLowBandwidth(true);
+                // FreeSwitch特定参数
+                // 设置优先使用的编解码器
+                params.setAudioBandwidthLimit(0); // 不限制带宽
+                
+                // 为较慢的网络优化参数
+                if (core.isNetworkReachable()) {
+                    // 在良好网络条件下启用优质编解码器
+                    Log.d(TAG, "网络可达，使用优质编解码器");
+                } else {
+                    // 在网络条件不佳时启用低带宽模式
+                    params.setLowBandwidthEnabled(true);
+                    Log.d(TAG, "网络不佳，启用低带宽模式");
+                }
                 
                 // 发起通话
                 core.inviteAddressWithParams(remoteAddress, params);

@@ -345,9 +345,52 @@ public class SignalingService {
     }
     
     /**
+     * 发送拒绝消息
+     */
+    public void sendReject(String userId) {
+        try {
+            JSONObject message = new JSONObject();
+            message.put("type", "reject");
+            message.put("userId", userId);
+            message.put("roomId", roomId);
+            
+            sendMessage(message);
+        } catch (JSONException e) {
+            Log.e(TAG, "创建拒绝消息失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 发送离开消息
+     */
+    public void sendLeave(String userId) {
+        try {
+            JSONObject message = new JSONObject();
+            message.put("type", "leave");
+            message.put("userId", userId);
+            message.put("roomId", roomId);
+            
+            sendMessage(message);
+        } catch (JSONException e) {
+            Log.e(TAG, "创建离开消息失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 发送会话描述
+     */
+    public void sendSessionDescription(SessionDescription sessionDescription, String userId) {
+        if (sessionDescription.type == SessionDescription.Type.OFFER) {
+            sendOffer(sessionDescription);
+        } else if (sessionDescription.type == SessionDescription.Type.ANSWER) {
+            sendAnswer(sessionDescription);
+        }
+    }
+    
+    /**
      * 发送ICE候选
      */
-    public void sendIceCandidate(IceCandidate iceCandidate) {
+    public void sendIceCandidate(IceCandidate iceCandidate, String userId) {
         try {
             JSONObject message = new JSONObject();
             message.put("type", "candidate");

@@ -345,6 +345,11 @@ public class MainActivity extends AppCompatActivity {
                 linphoneManager.init(this);
                 linphoneManager.start();
                 Log.d(TAG, "LinphoneManager初始化成功");
+                
+                // 添加FreeSwitch测试账号登录
+                // 注意：这里只是为了测试，实际应用中应该在用户登录后进行SIP账号注册
+                // linphoneManager.login("1001", "1234", "10.29.206.148", "5060", "UDP", null);
+                // Log.d(TAG, "FreeSwitch账号登录请求已发送");
             }
         } catch (Exception e) {
             Log.e(TAG, "初始化LinphoneManager失败", e);

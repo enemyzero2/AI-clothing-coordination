@@ -1,7 +1,6 @@
 package com.example.aioutfitapp.network;
 
 import android.content.Context;
-import android.net.sip.SipAudioCall;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -12,13 +11,17 @@ import org.webrtc.PeerConnection;
 import org.webrtc.SessionDescription;
 import org.webrtc.SurfaceViewRenderer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 通话管理服务
  * 
  * 集成SIP和WebRTC功能，提供统一的通话管理接口
+ * 已更新为使用Linphone与FreeSwitch兼容
  */
 public class CallManager implements 
-        com.example.aioutfitapp.network.SIPManager.SIPStateListener,
+        LinphoneManager.LinphoneManagerListener,
         WebRTCHelper.WebRTCHelperListener,
         SignalingService.SignalingListener {
     
@@ -36,7 +39,7 @@ public class CallManager implements
     public static final int CALL_STATE_ENDED = 4;
     
     // SIP和WebRTC组件
-    private com.example.aioutfitapp.network.SIPManager sipManager;
+    private LinphoneManager linphoneManager;
     private WebRTCHelper webRTCHelper;
     private SignalingService signalingService;
     private NetworkSimulator networkSimulator;
@@ -59,8 +62,22 @@ public class CallManager implements
     // 是否是主叫方
     private boolean isInitiator = false;
     
+    // 当前使用的SIP账号
+    private int currentAccountIndex = 0;
+    
     // 单例模式
     private static CallManager instance;
+    
+    // FreeSwitch服务器配置
+    private String sipServerDomain = "10.29.206.148"; 
+    private String sipServerAddress = "10.29.206.148";
+    private int sipServerPort = 5060;               // FreeSwitch默认SIP端口
+    private String sipTransport = "UDP";            // FreeSwitch传输协议
+    
+    // FreeSwitch账号配置
+    private static final int MIN_ACCOUNT_NUMBER = 1001;
+    private static final int MAX_ACCOUNT_NUMBER = 1010;
+    private static final String DEFAULT_PASSWORD = "1234";
     
     /**
      * 获取单例实例
@@ -80,12 +97,14 @@ public class CallManager implements
         this.mainHandler = new Handler(Looper.getMainLooper());
         
         // 初始化组件
-        this.sipManager = com.example.aioutfitapp.network.SIPManager.getInstance(context);
+        this.linphoneManager = LinphoneManager.getInstance();
+        this.linphoneManager.init(context);
         this.webRTCHelper = new WebRTCHelper(context);
         this.signalingService = new SignalingService(context);
         this.networkSimulator = NetworkSimulator.getInstance(context);
         
         // 设置监听器
+        this.linphoneManager.setLinphoneManagerListener(this);
         this.webRTCHelper.setListener(this);
         this.signalingService.setListener(this);
     }
@@ -98,30 +117,150 @@ public class CallManager implements
     }
     
     /**
+     * 设置FreeSwitch服务器配置
+     */
+    public void setSipServerConfig(String domain, String address, int port, String transport) {
+        this.sipServerDomain = domain;
+        this.sipServerAddress = address;
+        this.sipServerPort = port;
+        this.sipTransport = transport;
+    }
+    
+    /**
+     * 获取可用的SIP账号列表
+     */
+    public List<String> getAvailableSipAccounts() {
+        List<String> accounts = new ArrayList<>();
+        for (int i = MIN_ACCOUNT_NUMBER; i <= MAX_ACCOUNT_NUMBER; i++) {
+            accounts.add(String.valueOf(i));
+        }
+        return accounts;
+    }
+    
+    /**
+     * 获取当前使用的SIP账号
+     */
+    public String getCurrentSipAccount() {
+        int accountNumber = MIN_ACCOUNT_NUMBER + currentAccountIndex;
+        if (accountNumber > MAX_ACCOUNT_NUMBER) {
+            accountNumber = MIN_ACCOUNT_NUMBER;
+        }
+        return String.valueOf(accountNumber);
+    }
+    
+    /**
+     * 设置当前使用的SIP账号索引
+     */
+    public void setCurrentAccountIndex(int index) {
+        if (index >= 0 && index < (MAX_ACCOUNT_NUMBER - MIN_ACCOUNT_NUMBER + 1)) {
+            this.currentAccountIndex = index;
+            Log.d(TAG, "当前SIP账号设置为: " + getCurrentSipAccount());
+        } else {
+            Log.e(TAG, "无效的账号索引: " + index);
+        }
+    }
+    
+    /**
      * 初始化SIP服务
      */
     public boolean initializeSIP(String username, String domain, String password) {
         Log.d(TAG, "初始化SIP服务 - 用户名: " + username + ", 域名: " + domain);
         
-        // 获取设备本地IP地址（实际应用中应该动态获取）
-        String localIp = "192.168.1.x"; // 需要替换为实际IP
-        int sipPort = 5062;
+        // 使用Linphone登录FreeSwitch服务器
+        linphoneManager.login(username, password, domain,
+                         String.valueOf(sipServerPort), sipTransport, new LinphoneManager.SipCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "SIP登录成功!");
+                mainHandler.post(() -> {
+                    if(listener != null) {
+                        listener.onMessage("SIP登录成功");
+                    }
+                });
+            }
+            
+            @Override
+            public void onLoginStarted() {
+                Log.d(TAG, "SIP登录开始...");
+                mainHandler.post(() -> {
+                    if(listener != null) {
+                        listener.onMessage("正在连接SIP服务器...");
+                    }
+                });
+            }
+            
+            @Override
+            public void onError(String errorMessage) {
+                Log.e(TAG, "SIP登录失败: " + errorMessage);
+                mainHandler.post(() -> {
+                    if(listener != null) {
+                        listener.onError("SIP登录失败: " + errorMessage);
+                    }
+                });
+            }
+            
+            @Override
+            public void onRetryScheduled(int currentRetry, int maxRetries) {
+                Log.d(TAG, "SIP登录重试中 (" + currentRetry + "/" + maxRetries + ")");
+                mainHandler.post(() -> {
+                    if(listener != null) {
+                        listener.onMessage("重新尝试连接 (" + currentRetry + "/" + maxRetries + ")");
+                    }
+                });
+            }
+        });
         
-        // 配置SIP服务器
-        sipManager.setSipServerConfig(domain, localIp, sipPort);
+        // 登录过程是异步的，结果会通过回调通知
+        return true;
+    }
+    
+    /**
+     * 使用指定的FreeSwitch账号初始化SIP服务
+     */
+    public boolean initializeSipWithAccount(String accountNumber) {
+        if (!isValidAccount(accountNumber)) {
+            Log.e(TAG, "无效的账号: " + accountNumber);
+            return false;
+        }
         
-        // 初始化SIP
-        return sipManager.initialize(username, domain, password, this);
+        String username = accountNumber;
+        String password = DEFAULT_PASSWORD;
+        Log.d(TAG, "使用FreeSwitch账号初始化SIP服务 - 用户名: " + username + ", 服务器地址: " + sipServerAddress);
+        
+        return initializeSIP(username, sipServerDomain, password);
+    }
+    
+    /**
+     * 检查账号是否有效
+     */
+    private boolean isValidAccount(String accountNumber) {
+        try {
+            int account = Integer.parseInt(accountNumber);
+            return account >= MIN_ACCOUNT_NUMBER && account <= MAX_ACCOUNT_NUMBER;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
     
     /**
      * 使用默认测试账号初始化SIP服务
      */
     public boolean initializeDefaultSIP() {
-        String sipServerAddress = sipManager.getSipServerAddress();
-        String sipDomain = sipManager.getSipDomain();
-        Log.d(TAG, "使用默认测试账号初始化SIP服务 - 服务器地址: " + sipServerAddress + ", 域名: " + sipDomain);
-        return sipManager.initialize(this);
+        String username = getCurrentSipAccount();
+        String password = DEFAULT_PASSWORD;
+        Log.d(TAG, "使用FreeSwitch账号初始化SIP服务 - 用户名: " + username + ", 服务器地址: " + sipServerAddress);
+        
+        return initializeSIP(username, sipServerDomain, password);
+    }
+    
+    /**
+     * 切换到下一个SIP账号
+     */
+    public String switchToNextAccount() {
+        currentAccountIndex = (currentAccountIndex + 1) % (MAX_ACCOUNT_NUMBER - MIN_ACCOUNT_NUMBER + 1);
+        String newAccount = getCurrentSipAccount();
+        Log.d(TAG, "切换到下一个SIP账号: " + newAccount);
+        return newAccount;
     }
     
     /**
@@ -162,29 +301,7 @@ public class CallManager implements
         updateCallState(CALL_STATE_CONNECTING);
         
         Log.d(TAG, "发起SIP音频通话: " + sipAddress);
-        
-        sipManager.makeCall(sipAddress, new SipAudioCall.Listener() {
-            @Override
-            public void onCallEstablished(SipAudioCall call) {
-                super.onCallEstablished(call);
-                Log.d(TAG, "SIP通话已建立");
-                updateCallState(CALL_STATE_CONNECTED);
-            }
-            
-            @Override
-            public void onCallEnded(SipAudioCall call) {
-                super.onCallEnded(call);
-                Log.d(TAG, "SIP通话已结束");
-                updateCallState(CALL_STATE_ENDED);
-            }
-            
-            @Override
-            public void onError(SipAudioCall call, int errorCode, String errorMessage) {
-                super.onError(call, errorCode, errorMessage);
-                Log.e(TAG, "SIP音频通话错误: " + errorMessage);
-                updateCallState(CALL_STATE_ENDED);
-            }
-        });
+        linphoneManager.makeAudioCall(sipAddress);
     }
     
     /**
@@ -192,14 +309,65 @@ public class CallManager implements
      */
     public void makeAudioCallToTestUser(String username) {
         Log.d(TAG, "发起通话到测试用户: " + username);
-        sipManager.makeCallToTestUser(username, new SipAudioCall.Listener() {
-            @Override
-            public void onCallEstablished(SipAudioCall call) {
-                super.onCallEstablished(call);
-                Log.d(TAG, "通话到测试用户已建立");
-                updateCallState(CALL_STATE_CONNECTED);
+        // 构建完整的SIP地址
+        String sipAddress = username + "@" + sipServerDomain;
+        makeAudioCall(sipAddress);
+    }
+    
+    /**
+     * 拨打指定FreeSWITCH账号
+     * 
+     * @param accountNumber 目标账号(1001-1010)
+     * @return 是否成功发起呼叫
+     */
+    public boolean callFreeSwitchAccount(String accountNumber) {
+        if (!isValidAccount(accountNumber)) {
+            Log.e(TAG, "无效的FreeSWITCH账号: " + accountNumber);
+            mainHandler.post(() -> {
+                if(listener != null) {
+                    listener.onError("无效的FreeSWITCH账号: " + accountNumber);
+                }
+            });
+            return false;
+        }
+        
+        String sipAddress = accountNumber + "@" + sipServerDomain;
+        Log.d(TAG, "拨打FreeSWITCH账号: " + sipAddress);
+        makeAudioCall(sipAddress);
+        return true;
+    }
+    
+    /**
+     * 获取SIP账号状态信息
+     */
+    public String getSipAccountStatus() {
+        String currentAccount = getCurrentSipAccount();
+        boolean isRegistered = linphoneManager.isRegistered();
+        
+        StringBuilder status = new StringBuilder();
+        status.append("当前SIP账号: ").append(currentAccount).append("\n");
+        status.append("SIP服务器: ").append(sipServerDomain).append(":").append(sipServerPort).append("\n");
+        status.append("注册状态: ").append(isRegistered ? "已注册" : "未注册");
+        
+        return status.toString();
+    }
+    
+    /**
+     * 获取所有可用账号及其状态
+     */
+    public String getAllAccountsInfo() {
+        StringBuilder info = new StringBuilder();
+        info.append("FreeSWITCH可用账号(").append(MIN_ACCOUNT_NUMBER).append("-").append(MAX_ACCOUNT_NUMBER).append("):\n");
+        
+        for (int i = MIN_ACCOUNT_NUMBER; i <= MAX_ACCOUNT_NUMBER; i++) {
+            info.append(i).append(" - ").append("密码: ").append(DEFAULT_PASSWORD);
+            if (String.valueOf(i).equals(getCurrentSipAccount())) {
+                info.append(" [当前账号]");
             }
-        });
+            info.append("\n");
+        }
+        
+        return info.toString();
     }
     
     /**
@@ -216,6 +384,13 @@ public class CallManager implements
         this.roomId = roomId;
         updateCallState(CALL_STATE_CONNECTING);
         
+        // 如果是SIP视频通话
+        if (userId.contains("@")) {
+            linphoneManager.makeVideoCall(userId);
+            return;
+        }
+        
+        // 否则使用WebRTC进行视频通话
         // 连接到信令服务器并创建房间
         String serverUrl = "ws://10.29.206.148:8080/ws"; // 实际项目中应替换为真实的服务器地址
         signalingService.connect(serverUrl, userId, roomId);
@@ -231,8 +406,8 @@ public class CallManager implements
         }
         
         if (callType == CALL_TYPE_AUDIO) {
-            // 接听音频通话
-            // 这里应该有接听SIP通话的代码，但在这个例子中我们留空
+            // 接听SIP音频通话
+            linphoneManager.answerCall();
         } else {
             // 接听视频通话
             // 首先创建PeerConnection
@@ -241,8 +416,6 @@ public class CallManager implements
             // 创建应答
             webRTCHelper.createAnswer();
         }
-        
-        updateCallState(CALL_STATE_CONNECTED);
     }
     
     /**
@@ -254,7 +427,16 @@ public class CallManager implements
             return;
         }
         
-        endCall();
+        if (callType == CALL_TYPE_AUDIO) {
+            // 拒绝SIP通话
+            linphoneManager.rejectCall();
+        } else {
+            // 拒绝WebRTC视频通话
+            // 发送拒绝信令
+            signalingService.sendReject(remoteUserId);
+        }
+        
+        updateCallState(CALL_STATE_IDLE);
     }
     
     /**
@@ -262,48 +444,54 @@ public class CallManager implements
      */
     public void endCall() {
         if (callState == CALL_STATE_IDLE) {
+            Log.e(TAG, "没有正在进行的通话");
             return;
         }
         
-        if (callType == CALL_TYPE_AUDIO) {
-            // 结束音频通话
-            sipManager.endCall();
+        if (callType == CALL_TYPE_AUDIO || 
+            (callType == CALL_TYPE_VIDEO && linphoneManager.getCallState() != CALL_STATE_IDLE)) {
+            // 结束SIP通话
+            linphoneManager.endCall();
         } else {
-            // 结束视频通话
-            signalingService.leaveRoom();
-            signalingService.disconnect();
-            webRTCHelper.release();
+            // 结束WebRTC视频通话
+            webRTCHelper.close();
+            signalingService.sendLeave(remoteUserId);
         }
         
-        updateCallState(CALL_STATE_ENDED);
+        updateCallState(CALL_STATE_IDLE);
     }
     
     /**
-     * 设置麦克风状态
+     * 设置麦克风是否启用
      */
     public void setMicEnabled(boolean enabled) {
-        if (callType == CALL_TYPE_AUDIO) {
-            // 设置SIP音频通话麦克风状态
-            // 在这个例子中我们留空
+        if (callType == CALL_TYPE_AUDIO || 
+            (callType == CALL_TYPE_VIDEO && linphoneManager.getCallState() != CALL_STATE_IDLE)) {
+            // SIP通话
+            linphoneManager.setMicrophoneMuted(!enabled);
         } else {
-            // 设置WebRTC视频通话麦克风状态
+            // WebRTC视频通话
             webRTCHelper.setMicEnabled(enabled);
         }
+        
+        Log.d(TAG, "麦克风已" + (enabled ? "启用" : "禁用"));
     }
     
     /**
-     * 设置扬声器状态
+     * 设置扬声器是否启用
      */
     public void setSpeakerEnabled(boolean enabled) {
-        // 在这个例子中我们留空
+        linphoneManager.setSpeakerEnabled(enabled);
+        Log.d(TAG, "扬声器已" + (enabled ? "启用" : "禁用"));
     }
     
     /**
-     * 设置视频状态
+     * 设置视频是否启用
      */
     public void setVideoEnabled(boolean enabled) {
         if (callType == CALL_TYPE_VIDEO) {
             webRTCHelper.setVideoEnabled(enabled);
+            Log.d(TAG, "视频已" + (enabled ? "启用" : "禁用"));
         }
     }
     
@@ -313,6 +501,7 @@ public class CallManager implements
     public void switchCamera() {
         if (callType == CALL_TYPE_VIDEO) {
             webRTCHelper.switchCamera();
+            Log.d(TAG, "已切换摄像头");
         }
     }
     
@@ -321,9 +510,8 @@ public class CallManager implements
      */
     private void updateCallState(int state) {
         callState = state;
-        
         if (listener != null) {
-            mainHandler.post(() -> listener.onCallStateChanged(callState));
+            mainHandler.post(() -> listener.onCallStateChanged(state));
         }
     }
     
@@ -331,175 +519,170 @@ public class CallManager implements
      * 释放资源
      */
     public void release() {
-        // 结束当前通话
-        if (callState != CALL_STATE_IDLE && callState != CALL_STATE_ENDED) {
-            endCall();
-        }
-        
-        // 释放资源
-        sipManager.close();
-        webRTCHelper.release();
-        signalingService.disconnect();
-        networkSimulator.stopSimulation();
-    }
-    
-    // SIPManager.SIPStateListener 接口实现
-    
-    @Override
-    public void onRegistering() {
-        if (listener != null) {
-            mainHandler.post(() -> listener.onMessage("正在注册SIP账号..."));
+        try {
+            if (linphoneManager != null) {
+                linphoneManager.release();
+            }
+            
+            if (webRTCHelper != null) {
+                webRTCHelper.close();
+            }
+            
+            if (signalingService != null) {
+                signalingService.disconnect();
+            }
+            
+            instance = null;
+        } catch (Exception e) {
+            Log.e(TAG, "释放资源失败: " + e.getMessage(), e);
         }
     }
+    
+    // ============================== SIP回调 ==============================
     
     @Override
     public void onRegistered() {
-        if (listener != null) {
-            mainHandler.post(() -> listener.onMessage("SIP账号注册成功"));
-        }
+        Log.d(TAG, "SIP注册成功");
+        mainHandler.post(() -> {
+            if(listener != null) {
+                listener.onMessage("SIP账号已注册");
+            }
+        });
     }
     
     @Override
-    public void onCallEstablished() {
-        updateCallState(CALL_STATE_CONNECTED);
+    public void onCallStateChanged(int state) {
+        Log.d(TAG, "SIP通话状态变化: " + state);
+        updateCallState(state);
     }
     
     @Override
-    public void onCallEnded() {
-        updateCallState(CALL_STATE_ENDED);
-    }
-    
-    @Override
-    public void onIncomingCall(SipAudioCall call) {
-        // 收到SIP来电
-        callType = CALL_TYPE_AUDIO;
+    public void onIncomingCall(String callerId, int callType) {
+        Log.d(TAG, "收到来电: " + callerId + ", 类型: " + (callType == CALL_TYPE_AUDIO ? "音频" : "视频"));
+        this.callType = callType;
+        this.remoteUserId = callerId;
         updateCallState(CALL_STATE_RINGING);
         
-        if (listener != null) {
-            // 假设呼叫方ID是从SIP URI中提取的
-            String callerId = call.getPeerProfile().getUriString();
-            mainHandler.post(() -> listener.onIncomingCall(callerId, CALL_TYPE_AUDIO));
-        }
+        mainHandler.post(() -> {
+            if(listener != null) {
+                listener.onIncomingCall(callerId, callType);
+            }
+        });
     }
     
     @Override
     public void onError(String errorMessage) {
-        if (listener != null) {
-            mainHandler.post(() -> listener.onError(errorMessage));
-        }
+        Log.e(TAG, "SIP错误: " + errorMessage);
+        mainHandler.post(() -> {
+            if(listener != null) {
+                listener.onError("SIP错误: " + errorMessage);
+            }
+        });
     }
     
-    // WebRTCHelper.WebRTCHelperListener 接口实现
+    // ============================== WebRTC回调 ==============================
     
     @Override
     public void onLocalDescription(SessionDescription sessionDescription) {
-        if (sessionDescription.type == SessionDescription.Type.OFFER) {
-            signalingService.sendOffer(sessionDescription);
-        } else if (sessionDescription.type == SessionDescription.Type.ANSWER) {
-            signalingService.sendAnswer(sessionDescription);
-        }
+        Log.d(TAG, "WebRTC本地描述符已创建");
+        signalingService.sendSessionDescription(sessionDescription, remoteUserId);
     }
     
     @Override
     public void onIceCandidate(IceCandidate iceCandidate) {
-        signalingService.sendIceCandidate(iceCandidate);
+        Log.d(TAG, "WebRTC ICE候选项已创建");
+        signalingService.sendIceCandidate(iceCandidate, remoteUserId);
     }
     
     @Override
     public void onIceConnectionChange(PeerConnection.IceConnectionState iceConnectionState) {
-        if (iceConnectionState == PeerConnection.IceConnectionState.CONNECTED) {
+        Log.d(TAG, "WebRTC ICE连接状态变化: " + iceConnectionState);
+        
+        if (iceConnectionState == PeerConnection.IceConnectionState.CONNECTED ||
+            iceConnectionState == PeerConnection.IceConnectionState.COMPLETED) {
             updateCallState(CALL_STATE_CONNECTED);
-        } else if (iceConnectionState == PeerConnection.IceConnectionState.DISCONNECTED ||
-                iceConnectionState == PeerConnection.IceConnectionState.FAILED) {
-            updateCallState(CALL_STATE_ENDED);
         }
     }
     
     @Override
     public void onAddRemoteStream(MediaStream mediaStream) {
-        // 已经在WebRTCHelper中处理了添加远程视频轨道到渲染器
+        Log.d(TAG, "WebRTC远程媒体流已添加");
+        updateCallState(CALL_STATE_CONNECTED);
     }
     
-    // SignalingService.SignalingListener 接口实现
+    // ============================== 信令回调 ==============================
     
     @Override
     public void onConnected() {
-        if (listener != null) {
-            mainHandler.post(() -> listener.onMessage("已连接到信令服务器"));
-        }
+        Log.d(TAG, "信令服务器已连接");
     }
     
     @Override
     public void onDisconnected() {
-        if (listener != null) {
-            mainHandler.post(() -> listener.onMessage("已断开与信令服务器的连接"));
-        }
+        Log.d(TAG, "信令服务器已断开");
+        updateCallState(CALL_STATE_IDLE);
     }
     
     @Override
     public void onJoinedRoom(String roomId, boolean isInitiator) {
+        Log.d(TAG, "已加入房间: " + roomId + ", 是否发起者: " + isInitiator);
+        
         this.isInitiator = isInitiator;
+        this.roomId = roomId;
         
-        if (listener != null) {
-            mainHandler.post(() -> listener.onMessage("已加入房间: " + roomId));
-        }
-        
-        // 如果是发起方，则创建提议
+        // 如果是发起者，创建offer
         if (isInitiator) {
-            // 创建PeerConnection
             webRTCHelper.createPeerConnection();
-            
-            // 创建提议
             webRTCHelper.createOffer();
         }
     }
     
     @Override
     public void onRemoteOffer(SessionDescription sessionDescription) {
-        // 收到对方的提议
-        // 更新状态为振铃，通知UI有来电
-        callType = CALL_TYPE_VIDEO;
-        updateCallState(CALL_STATE_RINGING);
+        Log.d(TAG, "收到远程offer");
         
-        if (listener != null) {
-            mainHandler.post(() -> listener.onIncomingCall(remoteUserId, CALL_TYPE_VIDEO));
+        if (!isInitiator) {
+            webRTCHelper.createPeerConnection();
+            webRTCHelper.setRemoteDescription(sessionDescription);
+            webRTCHelper.createAnswer();
         }
-        
-        // 设置远程描述
-        webRTCHelper.setRemoteDescription(sessionDescription);
     }
     
     @Override
     public void onRemoteAnswer(SessionDescription sessionDescription) {
-        // 收到对方的应答
+        Log.d(TAG, "收到远程answer");
         webRTCHelper.setRemoteDescription(sessionDescription);
     }
     
     @Override
     public void onRemoteIceCandidate(IceCandidate iceCandidate) {
-        // 收到对方的ICE候选
-        webRTCHelper.addIceCandidate(iceCandidate);
+        Log.d(TAG, "收到远程ICE候选项");
+        webRTCHelper.addRemoteIceCandidate(iceCandidate);
     }
     
     @Override
     public void onRemoteLeave(String userId) {
-        // 对方离开了通话
-        updateCallState(CALL_STATE_ENDED);
+        Log.d(TAG, "远程用户离开: " + userId);
         
-        if (listener != null) {
-            mainHandler.post(() -> listener.onMessage("对方已结束通话"));
+        if (callState != CALL_STATE_IDLE) {
+            webRTCHelper.close();
+            updateCallState(CALL_STATE_ENDED);
+            
+            if (listener != null) {
+                mainHandler.post(() -> listener.onMessage("对方已挂断"));
+            }
         }
     }
     
     /**
-     * 获取当前通话状态
+     * 获取通话状态
      */
     public int getCallState() {
         return callState;
     }
     
     /**
-     * 获取当前通话类型
+     * 获取通话类型
      */
     public int getCallType() {
         return callType;

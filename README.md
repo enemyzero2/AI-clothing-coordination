@@ -64,13 +64,14 @@ app/
 
 ### SIP功能状态
 - **实现进度**：已完成Linphone SDK集成，替代了Android原生SIP API
-- **主要组件**：LinphoneManager.java、App.java
+- **主要组件**：LinphoneManager.java、CallManager.java、App.java
 - **功能完整性**：
   - 已实现SIP注册、呼叫、应答和终止等基本功能
   - 已集成通话状态监听与回调机制
   - 已实现麦克风、扬声器控制
   - 已实现视频通话支持
   - 已配置回声消除等音频优化
+  - 已支持多SIP账号管理和选择
 - **最新更新**：
   - 已完成从Android原生SIP API迁移到Linphone SDK
   - Linphone SDK支持Android 12+，解决了原生API被废弃的问题
@@ -80,36 +81,9 @@ app/
   - 添加了自动重试功能，在网络波动时自动尝试重新连接
   - 实现了完整的SIP连接诊断工具，帮助快速定位网络和服务器问题
   - 优化了错误信息显示，增加了用户友好的错误提示和解决方案建议
-- **客户端配置示例**：
-  ```
-  // Linphone SIP配置示例
-  LinphonePreferences.instance().setTransport(TransportType.Udp);  // 可选: Udp, Tcp, Tls
-  LinphoneCore lc = LinphoneManager.getLcIfManagerNotDestroyedOrNull();
-  if (lc != null) {
-      // 注册SIP账号
-      LinphoneAuthInfo authInfo = Factory.instance().createAuthInfo(
-          username,                 // SIP用户名 (user1/user2/support)
-          null,                     // 用户ID (一般与用户名相同)
-          password,                 // SIP密码
-          null,                     // HA1
-          null,                     // Realm (留空自动检测)
-          domainAddress             // SIP域 (本地Asterisk服务器IP)
-      );
-      lc.addAuthInfo(authInfo);
-      
-      // 配置代理
-      String identity = "sip:" + username + "@" + domainAddress;
-      String proxy = "sip:" + domainAddress;
-      LinphoneProxyConfig proxyConfig = lc.createProxyConfig();
-      proxyConfig.setIdentity(identity);
-      proxyConfig.setServerAddr(proxy);
-      proxyConfig.setRegisterEnabled(true);
-      lc.addProxyConfig(proxyConfig);
-      lc.setDefaultProxyConfig(proxyConfig);
-  }
-  ```
+  - 增加了对FreeSWITCH多账号(1001-1010)的支持，提供账号选择和管理功能
 
-### 本地Asterisk SIP服务器
+### FreeSwitch SIP服务器
 - **实现状态**：已完成基础配置，使用Docker部署，配置文件直接挂载
 - **部署位置**：项目根目录下的配置文件
 - **主要功能**：
@@ -120,6 +94,7 @@ app/
   - 支持语音邮箱和回音测试
   - 提供简单直观的配置方式
   - 用于开发和测试的本地SIP服务器
+  - 预配置了10个测试账号(1001-1010)，密码均为1234
 - **部署文件**：
   - `asterisk-docker-compose.yml` - Docker部署配置
   - `asterisk/pjsip.conf` - PJSIP协议配置（替代旧的sip.conf）
@@ -138,11 +113,15 @@ app/
   - 查看日志：`docker-compose -f asterisk-docker-compose.yml logs -f`
   - 进入Asterisk CLI：`docker exec -it asterisk asterisk -rvvv`
 - **SIP客户端配置**：
-  - 服务器地址：本地IP地址
-  - 端口：5060 (UDP/TCP)
-  - 用户名：101、102或200
-  - 密码：password1、password2或support123
-  - 特殊功能：999(回音测试)、1000(语音演示)、8000(语音邮箱)
+  - 服务器地址：10.29.206.148
+  - 端口：5060 (UDP)
+  - 用户名：1001-1010
+  - 密码：1234
+  - 用户操作：
+    - 在"联系人"界面菜单中选择"FreeSwitch账号"查看可用账号
+    - 在"联系人"界面菜单中选择"SIP状态"查看当前注册状态
+    - 发起呼叫时可选择使用的账号和呼叫目标
+  - 特殊功能：接入电话会议、语音邮箱、回音测试
 
 ### WebRTC功能状态
 - **实现进度**：基础框架已完成
@@ -550,72 +529,84 @@ app/
 ## 许可证
 MIT License
 
+# AI衣搭App - SIP通信配置指南
 
+## FreeSwitch SIP配置要求
 
+### 客户端配置参数
 
+为了与FreeSwitch服务器成功建立SIP连接，需要配置以下参数：
 
-AI Outfit App Kamailio SIP 服务器系统需求总结
-系统概述
-AI Outfit App需要一个SIP服务器来处理VoIP通信，使用Kamailio作为SIP服务器实现，并从MySQL数据库迁移到文本数据库(DBText)以简化配置和提高可靠性。
-服务器组件
-Kamailio SIP服务器 - 处理SIP消息路由和会话管理
-RTPEngine/RTPProxy - 处理媒体流和NAT穿透
-文本数据库(DBText) - 存储用户账户和注册信息
-配置要求
-域名/主机配置
-主域名: aioutfitapp.local
-本地主机文件需添加: 127.0.0.1 aioutfitapp.local
-端口配置
-SIP UDP/TCP: 5062
-WebSocket: 8080
-RTP端口范围: 10000-20000
-用户账户数据
-系统预置以下默认用户:
-用户名: alice@aioutfitapp.local, 密码: alice123, RPID: 1000
-用户名: bob@aioutfitapp.local, 密码: bob123, RPID: 1001
-用户名: test@aioutfitapp.local, 密码: test123, RPID: 1002
-用户名: admin@aioutfitapp.local, 密码: admin123, RPID: 1003
-数据库表结构
-subscriber表
-字段: id, username, domain, password, email_address, ha1, ha1b, rpid
-用于存储用户验证信息和凭据
-location表
-字段: id, ruid, username, domain, contact, received, path, expires, q, callid, cseq, last_modified, flags, cflags, user_agent, socket, methods, instance, reg_id, server_id, connection_id, keepalive, partition
-用于存储用户位置信息和注册数据
-version表
-字段: table_name, table_version
-跟踪数据库表的版本
-Docker容器
-kamailio容器
-基于kamailio/kamailio-ci:latest镜像
-挂载本地dbtext目录到容器
-使用自定义入口脚本进行初始化配置
-rtpengine/rtpproxy容器 (可选)
-用于媒体流处理和NAT穿透
-与kamailio容器共享网络
-功能模块
-核心SIP路由功能
-注册处理
-呼叫路由
-身份验证
-NAT穿透 (可选)
-使用nathelper模块
-配合rtpengine/rtpproxy处理媒体流
-WebSocket支持
-WebRTC兼容性
-部署脚本
-应用提供以下PowerShell脚本:
-start-kamailio-dbtext.ps1 - 启动DBText版Kamailio服务
-stop-kamailio-dbtext.ps1 - 停止DBText版Kamailio服务
-docker-entrypoint-dbtext.sh - Docker容器入口脚本
-系统要求
-Docker Desktop for Windows
-Windows PowerShell (管理员权限)
-端口5062和8080可用
-本地hosts文件可修改权限
-当前系统状态
-系统迁移到DBText过程中遇到以下问题:
-脚本编码和行结束符问题
-Docker容器之间的通信问题
-RTPEngine/RTPProxy的配置和兼容性问题
-需要重新简化设计，确保基本SIP服务功能可靠工作后再添加高级特性。
+1. **SIP服务器地址**：FreeSwitch服务器的IP地址或域名
+2. **SIP服务器端口**：默认为5060（UDP/TCP）或5061（TLS）
+3. **传输协议**：UDP（默认）、TCP或TLS
+4. **SIP用户名/分机号**：在FreeSwitch上配置的用户账号
+5. **密码**：对应用户账号的密码
+
+### FreeSwitch服务器端配置
+
+确保FreeSwitch服务器端已正确配置以下内容：
+
+1. **SIP Profiles**：在`conf/sip_profiles/`目录中配置
+   - 确保已启用相应的传输协议（UDP/TCP/TLS）
+   - 检查IP地址绑定是否正确
+   - 确认端口设置（默认5060）
+
+2. **用户账号**：在`conf/directory/default/`目录下配置用户
+   ```xml
+   <user id="1000">
+     <params>
+       <param name="password" value="your_password"/>
+       <param name="vm-password" value="1000"/>
+     </params>
+     <variables>
+       <variable name="user_context" value="default"/>
+       <variable name="effective_caller_id_name" value="用户名"/>
+       <variable name="effective_caller_id_number" value="1000"/>
+     </variables>
+   </user>
+   ```
+
+3. **拨号计划**：在`conf/dialplan/default.xml`中配置
+   ```xml
+   <extension name="内部呼叫">
+     <condition field="destination_number" expression="^(10[01][0-9])$">
+       <action application="bridge" data="user/$1"/>
+     </condition>
+   </extension>
+   ```
+
+### 故障排除
+
+如果连接失败，请检查：
+
+1. **网络连接**：确认客户端和服务器间的网络连通性
+   - 使用`ping`测试基本连通性
+   - 使用`netcat`测试具体端口：`nc -vuz SERVER_IP 5060`（UDP）
+
+2. **防火墙设置**：
+   - 确保服务器防火墙允许SIP通信（5060-5061端口）
+   - 检查是否允许RTP端口范围（通常为10000-20000）
+
+3. **SIP诊断**：
+   - 查看FreeSwitch控制台的实时日志：`fs_cli -x 'console loglevel debug'`
+   - 使用SIP测试工具如SIPp或Wireshark分析SIP通信
+
+4. **编解码器兼容性**：
+   - 确保客户端和服务器都支持共同的音频/视频编解码器
+
+## 应用配置指南
+
+在AI衣搭App中配置SIP连接：
+
+1. 启动应用后，进入设置界面
+2. 填写SIP配置部分的各项参数
+3. 点击"连接"按钮测试SIP注册
+4. 成功连接后即可开始SIP通话
+
+## 注意事项
+
+- 内网环境下可能需要额外的NAT穿透配置
+- 通话质量受网络状况影响较大
+- 视频通话需要确保较好的网络带宽
+- 公共互联网环境下，推荐使用TLS加密保护通信安全

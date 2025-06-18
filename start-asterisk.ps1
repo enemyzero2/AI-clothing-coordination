@@ -91,7 +91,7 @@ if ($volumes) {
 Write-Host "使用手动设置的IP地址..." -ForegroundColor Cyan
 
 # 设置外部IP地址
-$externalIP = "10.29.206.148"  # 固定使用此IP地址
+$externalIP = "192.168.113.158"  # 固定使用此IP地址
 Write-Host "使用外部IP地址: $externalIP" -ForegroundColor Green
 
 # 启动SIP服务器

@@ -1,4 +1,4 @@
- package com.example.aioutfitapp.network;
+package com.example.aioutfitapp.network;
 
 import android.content.Context;
 import android.media.AudioManager;
@@ -480,6 +480,18 @@ public class WebRTCHelper {
     }
     
     /**
+     * 添加远程ICE候选
+     */
+    public void addRemoteIceCandidate(IceCandidate iceCandidate) {
+        if (peerConnection == null) {
+            Log.e(TAG, "PeerConnection未初始化，无法添加远程ICE候选");
+            return;
+        }
+        
+        peerConnection.addIceCandidate(iceCandidate);
+    }
+    
+    /**
      * 添加ICE候选
      */
     public void addIceCandidate(IceCandidate iceCandidate) {
@@ -489,6 +501,28 @@ public class WebRTCHelper {
         }
         
         peerConnection.addIceCandidate(iceCandidate);
+    }
+    
+    /**
+     * 关闭WebRTC连接
+     */
+    public void close() {
+        // 停止视频捕获
+        if (videoCapturer != null) {
+            try {
+                videoCapturer.stopCapture();
+            } catch (InterruptedException e) {
+                Log.e(TAG, "停止视频捕获失败: " + e.getMessage());
+            }
+        }
+        
+        // 关闭PeerConnection
+        if (peerConnection != null) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+        
+        Log.d(TAG, "WebRTC连接已关闭");
     }
     
     /**

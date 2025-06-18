@@ -2,7 +2,7 @@
 
 services:
   asterisk:
-    image: andrius/asterisk:latest
+    image: andrius/asterisk:alpine-latest-20.5.2
     container_name: asterisk
     ports:
       - "5060:5060/udp"    # SIP UDP
@@ -13,7 +13,7 @@ services:
       - ./asterisk/pjsip.conf:/etc/asterisk/pjsip.conf
       - ./asterisk/extensions.conf:/etc/asterisk/extensions.conf
       - ./asterisk/users.conf:/etc/asterisk/users.conf
-      - ./asterisk/modules.conf:/etc/asterisk/modules.conf
+      # - ./asterisk/modules.conf:/etc/asterisk/modules.conf
       - ./certs:/etc/asterisk/certs
       - asterisk_sounds:/var/lib/asterisk/sounds
       - asterisk_moh:/var/lib/asterisk/moh
@@ -27,6 +27,7 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - EXTERNAL_IP=${EXTERNAL_IP}
+    command: ["asterisk", "-f"]
     networks:
       - sip_net
 

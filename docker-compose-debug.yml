@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   asterisk:
-    image: bitnami/asterisk:latest
+    image: dougbtv/asterisk:latest
     container_name: asterisk-debug
     ports:
       - "5060:5060/udp"    # SIP UDP

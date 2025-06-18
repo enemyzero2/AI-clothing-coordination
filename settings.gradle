@@ -20,7 +20,7 @@ dependencyResolutionManagement {
         maven { url = uri("https://maven.aliyun.com/repository/jcenter") }
         maven { url = uri("https://maven.aliyun.com/repository/public") }
         // 添加Linphone Maven仓库
-        maven { url = uri("https://linphone.org/releases/maven_repository/") }
+        maven { url = uri("https://download.linphone.org/releases/maven_repository/") }
     }
 }
 

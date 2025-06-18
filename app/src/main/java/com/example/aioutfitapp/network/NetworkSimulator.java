@@ -1,4 +1,4 @@
- package com.example.aioutfitapp.network;
+package com.example.aioutfitapp.network;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -25,6 +25,13 @@ public class NetworkSimulator {
     // 网络类型常量
     public static final int NETWORK_TYPE_4G = 0;
     public static final int NETWORK_TYPE_5G = 1;
+    
+    // 网络质量常量
+    public static final int NETWORK_QUALITY_EXCELLENT = 0;
+    public static final int NETWORK_QUALITY_GOOD = 1;
+    public static final int NETWORK_QUALITY_FAIR = 2;
+    public static final int NETWORK_QUALITY_POOR = 3;
+    public static final int NETWORK_QUALITY_BAD = 4;
     
     // 网络参数
     private int currentNetworkType = NETWORK_TYPE_4G; // 默认4G网络
@@ -350,6 +357,70 @@ public class NetworkSimulator {
     public boolean simulatePacketLoss() {
         // 根据当前丢包率，随机决定是否丢包
         return random.nextFloat() * 100 < packetLoss;
+    }
+    
+    /**
+     * 获取当前网络质量
+     * 根据带宽、延迟和丢包率综合评估网络质量
+     * @return 网络质量级别（0-4，0最好，4最差）
+     */
+    public int getCurrentNetworkQuality() {
+        // 根据当前网络参数计算网络质量
+        int score = 0;
+        
+        // 带宽评分
+        if (bandwidth >= 100) {
+            score += 0;  // 极佳
+        } else if (bandwidth >= 50) {
+            score += 1;  // 良好
+        } else if (bandwidth >= 20) {
+            score += 2;  // 一般
+        } else if (bandwidth >= 10) {
+            score += 3;  // 较差
+        } else {
+            score += 4;  // 极差
+        }
+        
+        // 延迟评分
+        if (latency <= 20) {
+            score += 0;  // 极佳
+        } else if (latency <= 50) {
+            score += 1;  // 良好
+        } else if (latency <= 100) {
+            score += 2;  // 一般
+        } else if (latency <= 200) {
+            score += 3;  // 较差
+        } else {
+            score += 4;  // 极差
+        }
+        
+        // 丢包率评分
+        if (packetLoss <= 0.1) {
+            score += 0;  // 极佳
+        } else if (packetLoss <= 0.5) {
+            score += 1;  // 良好
+        } else if (packetLoss <= 1.0) {
+            score += 2;  // 一般
+        } else if (packetLoss <= 2.0) {
+            score += 3;  // 较差
+        } else {
+            score += 4;  // 极差
+        }
+        
+        // 计算平均分数并映射到质量级别
+        int avgScore = score / 3;
+        switch (avgScore) {
+            case 0:
+                return NETWORK_QUALITY_EXCELLENT;
+            case 1:
+                return NETWORK_QUALITY_GOOD;
+            case 2:
+                return NETWORK_QUALITY_FAIR;
+            case 3:
+                return NETWORK_QUALITY_POOR;
+            default:
+                return NETWORK_QUALITY_BAD;
+        }
     }
     
     /**

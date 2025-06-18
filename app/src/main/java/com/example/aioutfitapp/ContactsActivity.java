@@ -3,6 +3,8 @@ package com.example.aioutfitapp;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -15,6 +17,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.example.aioutfitapp.model.Contact;
 import com.example.aioutfitapp.model.ContactManager;
+import com.example.aioutfitapp.network.CallManager;
 import com.example.aioutfitapp.network.LinphoneManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -174,8 +177,8 @@ public class ContactsActivity extends AppCompatActivity {
             builder.setPositiveButton("登录", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    // 这里进行SIP登录(示例使用默认账号)
-                    loginToSip(contact);
+                    // 显示SIP账号选择器
+                    showSipAccountSelector();
                 }
             });
             builder.setNegativeButton("取消", null);
@@ -191,118 +194,8 @@ public class ContactsActivity extends AppCompatActivity {
      * 登录到SIP服务器
      */
     private void loginToSip(Contact contact) {
-        // 显示登录中提示
-        Toast.makeText(this, "正在连接SIP服务器...", Toast.LENGTH_SHORT).show();
-        
-        // 初始化Linphone(如果尚未初始化)
-        LinphoneManager linphoneManager = LinphoneManager.getInstance();
-        
-        // 检查网络连接
-        if (!isNetworkConnected()) {
-            Toast.makeText(this, "网络连接异常，请检查网络设置", Toast.LENGTH_LONG).show();
-            return;
-        }
-        
-        // 检查Linphone初始化状态并输出详细日志
-        if (linphoneManager.getCore() == null) {
-            try {
-                linphoneManager.init(this);
-                android.util.Log.d(TAG, "Linphone核心引擎初始化成功");
-            } catch (Exception e) {
-                String errorMsg = "Linphone初始化失败: " + e.getMessage();
-                android.util.Log.e(TAG, errorMsg, e);
-                Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
-                return;
-            }
-        }
-        
-        android.util.Log.d(TAG, "尝试SIP登录 - 用户名: admin, 域名: aioutfitapp.local, 端口: 5062");
-        
-        // 开始登录前先监听回调
-        linphoneManager.setListener(new LinphoneManager.LinphoneManagerListener() {
-            @Override
-            public void onCallStateChanged(int state) {
-                android.util.Log.d(TAG, "通话状态变更: " + state);
-            }
-            
-            @Override
-            public void onIncomingCall(String callerId, int callType) {
-                android.util.Log.d(TAG, "收到来电: " + callerId + ", 类型: " + callType);
-            }
-            
-            @Override
-            public void onRegistered() {
-                // 注册成功后拨打电话
-                android.util.Log.i(TAG, "SIP注册成功");
-                runOnUiThread(() -> {
-                    Toast.makeText(ContactsActivity.this, "SIP注册成功，开始通话", Toast.LENGTH_SHORT).show();
-                    startCall(contact);
-                });
-            }
-            
-            @Override
-            public void onError(String errorMessage) {
-                android.util.Log.e(TAG, "SIP注册错误: " + errorMessage);
-                runOnUiThread(() -> {
-                    // 显示更详细的错误提示
-                    showSipErrorDialog("SIP登录失败", errorMessage);
-                    
-                    // 域名解析失败时尝试使用IP地址
-                    if (errorMessage.contains("域名解析失败") || errorMessage.contains("UnknownHostException")) {
-                        showIpConnectionDialog(contact);
-                    }
-                });
-            }
-        });
-        
-        // 使用默认配置登录并添加超时处理
-        try {
-            linphoneManager.login("admin", "admin123", "aioutfitapp.local", "5062", "udp", new LinphoneManager.SipCallback() {
-                @Override
-                public void onSuccess() {
-                    android.util.Log.i(TAG, "SIP登录成功");
-                    runOnUiThread(() -> {
-                        Toast.makeText(ContactsActivity.this, "SIP注册成功，开始通话", Toast.LENGTH_SHORT).show();
-                        startCall(contact);
-                    });
-                }
-                
-                @Override
-                public void onLoginStarted() {
-                    android.util.Log.d(TAG, "SIP登录开始");
-                }
-                
-                @Override
-                public void onError(String errorMessage) {
-                    android.util.Log.e(TAG, "SIP登录错误: " + errorMessage);
-                    runOnUiThread(() -> {
-                        showSipErrorDialog("SIP登录失败", errorMessage);
-                    });
-                }
-            });
-            
-            // 添加注册超时检查
-            new android.os.Handler().postDelayed(() -> {
-                if (!linphoneManager.isRegistered()) {
-                    android.util.Log.e(TAG, "SIP注册超时");
-                    runOnUiThread(() -> {
-                        showSipErrorDialog("SIP注册超时", 
-                            "连接服务器超时，请检查:\n" +
-                            "1. 网络连接状态\n" +
-                            "2. SIP服务器地址和端口是否正确\n" +
-                            "3. SIP服务器是否在线\n" +
-                            "4. 账号密码是否正确");
-                        
-                        // 尝试使用本机IP连接
-                        showIpConnectionDialog(contact);
-                    });
-                }
-            }, 15000); // 15秒超时
-        } catch (Exception e) {
-            String errorMsg = "SIP登录异常: " + e.getMessage();
-            android.util.Log.e(TAG, errorMsg, e);
-            Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
-        }
+        // 显示SIP账号选择器
+        showSipAccountSelector();
     }
     
     /**
@@ -441,18 +334,30 @@ public class ContactsActivity extends AppCompatActivity {
      * 开始通话
      */
     private void startCall(Contact contact) {
-        // 启动通话活动
-        String roomId = "room" + System.currentTimeMillis();
-        Intent intent = CallActivity.createOutgoingCallIntent(
-                this, 
-                0, // 默认音频通话
-                contact.getUsername(),
-                roomId
-        );
-        startActivity(intent);
-        
-        // 更新最后通话时间
-        contactManager.updateContactCallTime(contact.getUsername(), System.currentTimeMillis());
+        try {
+            // 构建SIP地址
+            String sipAddress;
+            if (contact.getUsername().contains("@")) {
+                // 已经是完整SIP地址
+                sipAddress = contact.getUsername();
+            } else {
+                // 使用FreeSwitch服务器格式
+                sipAddress = contact.getUsername() + "@10.29.206.148";
+            }
+            
+            // 创建通话Intent
+            Intent intent = CallActivity.createOutgoingCallIntent(
+                    this,
+                    CallManager.CALL_TYPE_AUDIO,
+                    sipAddress,
+                    "default-room"
+            );
+            
+            // 启动通话活动
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "发起通话失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
     
     /**
@@ -507,5 +412,102 @@ public class ContactsActivity extends AppCompatActivity {
     public boolean onSupportNavigateUp() {
         onBackPressed();
         return true;
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_contacts, menu);
+        return true;
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        
+        if (id == R.id.action_freesip_accounts) {
+            showFreeSwitchAccounts();
+            return true;
+        } else if (id == R.id.action_sip_status) {
+            showSipStatus();
+            return true;
+        }
+        
+        return super.onOptionsItemSelected(item);
+    }
+    
+    /**
+     * 显示FreeSwitch账号信息
+     */
+    private void showFreeSwitchAccounts() {
+        CallManager callManager = CallManager.getInstance(this);
+        String accountsInfo = callManager.getAllAccountsInfo();
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("FreeSwitch可用账号");
+        builder.setMessage(accountsInfo);
+        builder.setPositiveButton("确定", null);
+        builder.show();
+    }
+    
+    /**
+     * 显示SIP状态信息
+     */
+    private void showSipStatus() {
+        CallManager callManager = CallManager.getInstance(this);
+        String statusInfo = callManager.getSipAccountStatus();
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("SIP账号状态");
+        builder.setMessage(statusInfo);
+        builder.setPositiveButton("确定", null);
+        builder.setNeutralButton("切换账号", (dialog, which) -> {
+            showSipAccountSelector();
+        });
+        builder.show();
+    }
+    
+    /**
+     * 显示SIP账号选择器
+     */
+    private void showSipAccountSelector() {
+        CallManager callManager = CallManager.getInstance(this);
+        List<String> accounts = callManager.getAvailableSipAccounts();
+        String[] accountsArray = accounts.toArray(new String[0]);
+        
+        // 显示账号信息
+        String[] displayArray = new String[accountsArray.length];
+        for (int i = 0; i < accountsArray.length; i++) {
+            displayArray[i] = accountsArray[i] + " (密码: 1234)";
+        }
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("选择要使用的SIP账号");
+        builder.setSingleChoiceItems(displayArray, 0, null);
+        builder.setPositiveButton("登录", (dialog, which) -> {
+            int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+            if (selectedPosition >= 0 && selectedPosition < accounts.size()) {
+                String selectedAccount = accounts.get(selectedPosition);
+                loginToSipWithAccount(selectedAccount, selectedPosition);
+            }
+        });
+        builder.setNegativeButton("取消", null);
+        builder.show();
+    }
+    
+    /**
+     * 使用指定账号登录SIP
+     */
+    private void loginToSipWithAccount(String username, int accountIndex) {
+        // 显示登录中提示
+        Toast.makeText(this, "正在连接SIP服务器使用账号 " + username + "...", Toast.LENGTH_SHORT).show();
+        
+        CallManager callManager = CallManager.getInstance(this);
+        callManager.setCurrentAccountIndex(accountIndex);
+        
+        if (callManager.initializeSipWithAccount(username)) {
+            Toast.makeText(this, "正在登录SIP账号: " + username, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "SIP账号初始化失败: " + username, Toast.LENGTH_SHORT).show();
+        }
     }
 } 

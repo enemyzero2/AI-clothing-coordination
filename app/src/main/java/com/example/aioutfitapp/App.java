@@ -5,8 +5,6 @@ import android.content.Context;
 
 import com.example.aioutfitapp.network.LinphoneManager;
 
-import org.linphone.core.Factory;
-
 /**
  * 应用类
  * 
@@ -21,19 +19,17 @@ public class App extends Application {
     public static final String PREF_VOIP_PWD = "pref_voip_password";
     public static final String PREF_VOIP_IP = "pref_voip_server_ip";
     public static final String PREF_VOIP_PORT = "pref_voip_server_port";
-    public static final String DEF_SIP_PORT = "5062";
-    
-    // Linphone配置文件
-    public static final String LINPHONE_CONFIG_DEF = ".linphonerc";
-    public static final String LINPHONE_CONFIG_FAC = "linphonerc_factory";
+    public static final String PREF_VOIP_TRANSPORT = "pref_voip_transport_protocol";
+    public static final String DEF_SIP_PORT = "5060"; // FreeSwitch默认端口
+    public static final String DEF_SIP_TRANSPORT = "UDP"; // 默认传输协议
     
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
         
-        // 初始化Linphone工厂
-        Factory.instance();
+        // 初始化Linphone管理器
+        LinphoneManager.getInstance().init(this);
     }
     
     /**
