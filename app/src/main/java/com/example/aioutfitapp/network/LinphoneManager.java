@@ -1,6 +1,7 @@
 package com.example.aioutfitapp.network;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.util.Log;
 import android.view.View;
@@ -32,6 +33,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
 
+import com.example.aioutfitapp.App;
+
 /**
  * Linphone管理类
  * 
@@ -40,6 +43,15 @@ import java.util.Locale;
 public class LinphoneManager {
     
     private static final String TAG = "LinphoneManager";
+    
+    // 存储键值
+    private static final String PREF_NAME = "linphone_preferences";
+    private static final String PREF_USERNAME = "pref_username";
+    private static final String PREF_PASSWORD = "pref_password";
+    private static final String PREF_DOMAIN = "pref_domain";
+    private static final String PREF_PORT = "pref_port";
+    private static final String PREF_TRANSPORT = "pref_transport";
+    private static final String PREF_AUTO_LOGIN = "pref_auto_login";
     
     // 通话类型
     public static final int CALL_TYPE_AUDIO = 0;
@@ -75,6 +87,14 @@ public class LinphoneManager {
     private String transport;
     private SipCallback sipCallback;
     
+    // 是否已初始化
+    private boolean isInitialized = false;
+    // 是否自动登录
+    private boolean autoLogin = true;
+    
+    // 存储对象
+    private SharedPreferences preferences;
+    
     /**
      * 获取单例实例
      */
@@ -92,7 +112,12 @@ public class LinphoneManager {
      * @return LinphoneManager实例
      */
     public LinphoneManager init(Context context) {
+        if (isInitialized) {
+            return this;
+        }
+        
         this.context = context.getApplicationContext();
+        this.preferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         
         // 开启日志收集
         Factory.instance().enableLogCollection(LogCollectionState.Enabled);
@@ -119,12 +144,123 @@ public class LinphoneManager {
             // 配置通话参数
             configureCore();
             
+            // 标记为已初始化
+            isInitialized = true;
+            
             Log.i(TAG, "Linphone初始化完成");
+            
+            // 尝试自动登录
+            tryAutoLogin();
+            
         } catch (Exception e) {
             Log.e(TAG, "Linphone初始化失败: " + e.getMessage(), e);
         }
         
         return this;
+    }
+    
+    /**
+     * 尝试自动登录
+     */
+    private void tryAutoLogin() {
+        // 检查是否启用自动登录
+        boolean shouldAutoLogin = preferences.getBoolean(PREF_AUTO_LOGIN, true);
+        
+        if (shouldAutoLogin) {
+            // 读取保存的账号信息
+            String savedUsername = preferences.getString(PREF_USERNAME, "");
+            String savedPassword = preferences.getString(PREF_PASSWORD, "");
+            String savedDomain = preferences.getString(PREF_DOMAIN, "");
+            String savedPort = preferences.getString(PREF_PORT, "5062");
+            String savedTransport = preferences.getString(PREF_TRANSPORT, "udp");
+            
+            // 检查是否有保存的账号
+            if (!savedUsername.isEmpty() && !savedPassword.isEmpty() && !savedDomain.isEmpty()) {
+                Log.i(TAG, "尝试使用保存的账号自动登录: " + savedUsername + "@" + savedDomain);
+                
+                // 自动登录
+                login(savedUsername, savedPassword, savedDomain, savedPort, savedTransport, new SipCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.i(TAG, "自动登录成功");
+                    }
+                    
+                    @Override
+                    public void onLoginStarted() {
+                        Log.d(TAG, "自动登录开始");
+                    }
+                    
+                    @Override
+                    public void onError(String errorMessage) {
+                        Log.e(TAG, "自动登录失败: " + errorMessage);
+                    }
+                });
+            } else {
+                Log.i(TAG, "没有保存的账号信息，跳过自动登录");
+            }
+        } else {
+            Log.i(TAG, "自动登录已禁用");
+        }
+    }
+    
+    /**
+     * 保存SIP账号信息
+     */
+    private void saveSipCredentials(String username, String password, String domain, String port, String transport) {
+        if (preferences != null) {
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putString(PREF_USERNAME, username);
+            editor.putString(PREF_PASSWORD, password);
+            editor.putString(PREF_DOMAIN, domain);
+            editor.putString(PREF_PORT, port);
+            editor.putString(PREF_TRANSPORT, transport);
+            editor.putBoolean(PREF_AUTO_LOGIN, autoLogin);
+            editor.apply();
+            
+            Log.d(TAG, "SIP账号信息已保存: " + username + "@" + domain);
+        }
+    }
+    
+    /**
+     * 清除保存的SIP账号信息
+     */
+    public void clearSipCredentials() {
+        if (preferences != null) {
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.remove(PREF_USERNAME);
+            editor.remove(PREF_PASSWORD);
+            editor.remove(PREF_DOMAIN);
+            editor.remove(PREF_PORT);
+            editor.remove(PREF_TRANSPORT);
+            editor.apply();
+            
+            Log.d(TAG, "SIP账号信息已清除");
+        }
+    }
+    
+    /**
+     * 设置是否自动登录
+     */
+    public void setAutoLogin(boolean enable) {
+        this.autoLogin = enable;
+        if (preferences != null) {
+            preferences.edit().putBoolean(PREF_AUTO_LOGIN, enable).apply();
+            Log.d(TAG, "自动登录已" + (enable ? "启用" : "禁用"));
+        }
+    }
+    
+    /**
+     * 获取当前登录的用户名
+     */
+    public String getUsername() {
+        return username;
+    }
+    
+    /**
+     * 获取当前登录的域名
+     */
+    public String getDomain() {
+        return domain;
     }
     
     /**
@@ -681,6 +817,20 @@ public class LinphoneManager {
                 // 测试模拟回调，因为有可能回调没有正确触发
                 checkRegistrationStatus(account);
                 
+                // 登录成功，保存凭据
+                saveSipCredentials(username, password, domain, port, transport);
+                
+                // 通知UI线程登录成功
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                    if (sipCallback != null) {
+                        sipCallback.onSuccess();
+                    }
+                    
+                    if (listener != null) {
+                        listener.onRegistered();
+                    }
+                });
+                
             } catch (Exception e) {
                 // 获取更多异常信息
                 String errorMsg;
@@ -1024,15 +1174,37 @@ public class LinphoneManager {
      * 注销SIP账号
      */
     public void logout() {
-        if (core == null) return;
-        
-        Account defaultAccount = core.getDefaultAccount();
-        if (defaultAccount != null) {
-            AccountParams params = defaultAccount.getParams().clone();
-            params.setRegisterEnabled(false);
-            defaultAccount.setParams(params);
-            
-            Log.i(TAG, "SIP账号已注销");
+        try {
+            if (core != null) {
+                // 停止所有呼叫
+                if (core.getCallsNb() > 0) {
+                    core.terminateAllCalls();
+                }
+                
+                // 清除所有代理配置
+                core.clearProxyConfig();
+                
+                // 清除所有认证信息
+                for (AuthInfo authInfo : core.getAuthInfoList()) {
+                    core.removeAuthInfo(authInfo);
+                }
+                
+                Log.i(TAG, "已注销SIP账号");
+                
+                // 清除登录缓存
+                username = null;
+                password = null;
+                domain = null;
+                port = null;
+                transport = null;
+                
+                // 更新注销状态到UI
+                if (listener != null) {
+                    listener.onError("已注销");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "注销失败: " + e.getMessage(), e);
         }
     }
     

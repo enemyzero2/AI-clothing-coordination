@@ -2,6 +2,7 @@ package com.example.aioutfitapp;
 
 import android.app.Application;
 import android.content.Context;
+import android.util.Log;
 
 import com.example.aioutfitapp.network.LinphoneManager;
 
@@ -11,6 +12,8 @@ import com.example.aioutfitapp.network.LinphoneManager;
  * 用于初始化应用级别的组件和设置
  */
 public class App extends Application {
+    
+    private static final String TAG = "App";
     
     private static App instance;
     
@@ -28,8 +31,24 @@ public class App extends Application {
         super.onCreate();
         instance = this;
         
+        Log.i(TAG, "应用启动初始化");
+        
         // 初始化Linphone管理器
-        LinphoneManager.getInstance().init(this);
+        initLinphone();
+    }
+    
+    /**
+     * 初始化Linphone组件
+     */
+    private void initLinphone() {
+        try {
+            Log.d(TAG, "开始初始化Linphone");
+            LinphoneManager.getInstance().init(this);
+            LinphoneManager.getInstance().start();
+            Log.d(TAG, "Linphone初始化完成");
+        } catch (Exception e) {
+            Log.e(TAG, "Linphone初始化失败: " + e.getMessage(), e);
+        }
     }
     
     /**

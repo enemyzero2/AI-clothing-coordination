@@ -26,10 +26,49 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+        <!-- 拨号卡片 -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/dialer_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <EditText
+                    android:id="@+id/sip_address_input"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="输入SIP账号(例如: 1001)"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:imeOptions="actionDone" />
+
+                <Button
+                    android:id="@+id/dial_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="拨打"
+                    android:textColor="@android:color/white"
+                    android:background="@drawable/call_btn_background"
+                    android:layout_marginStart="8dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
         <ListView
             android:id="@+id/contacts_list_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_below="@id/dialer_card"
             android:divider="@android:color/darker_gray"
             android:dividerHeight="0.5dp"
             android:paddingStart="16dp"

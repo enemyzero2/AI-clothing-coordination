@@ -13,6 +13,11 @@
         app:showAsAction="never" />
     
     <item
+        android:id="@+id/action_sip_logout"
+        android:title="SIP注销"
+        app:showAsAction="never" />
+    
+    <item
         android:id="@+id/action_settings"
         android:title="设置"
         app:showAsAction="never" />

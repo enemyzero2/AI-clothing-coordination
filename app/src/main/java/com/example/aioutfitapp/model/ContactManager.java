@@ -97,15 +97,21 @@ public class ContactManager {
     private void addDefaultContacts() {
         String domain = "aioutfitapp.local";
         
-        // 添加测试用户
-        contacts.add(new Contact(generateId(), "alice", "爱丽丝", domain));
-        contacts.add(new Contact(generateId(), "bob", "鲍勃", domain));
-        contacts.add(new Contact(generateId(), "test", "测试账号", domain));
-        contacts.add(new Contact(generateId(), "admin", "管理员", domain));
+        // 添加SIP账号联系人
+        contacts.add(new Contact(generateId(), "1001", "用户1001", domain));
+        contacts.add(new Contact(generateId(), "1002", "用户1002", domain));
+        contacts.add(new Contact(generateId(), "1003", "用户1003", domain));
+        contacts.add(new Contact(generateId(), "1004", "用户1004", domain));
+        contacts.add(new Contact(generateId(), "1005", "用户1005", domain));
+        contacts.add(new Contact(generateId(), "1006", "用户1006", domain));
+        contacts.add(new Contact(generateId(), "1007", "用户1007", domain));
+        contacts.add(new Contact(generateId(), "1008", "用户1008", domain));
+        contacts.add(new Contact(generateId(), "1009", "用户1009", domain));
+        contacts.add(new Contact(generateId(), "1010", "用户1010", domain));
         
         // 保存默认联系人
         saveContacts();
-        Log.d(TAG, "已添加默认联系人");
+        Log.d(TAG, "已添加默认SIP账号联系人");
     }
     
     /**

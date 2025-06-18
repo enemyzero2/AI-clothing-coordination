@@ -3,11 +3,14 @@ package com.example.aioutfitapp;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -38,6 +41,10 @@ public class ContactsActivity extends AppCompatActivity {
     private ContactManager contactManager;
     private List<Contact> contacts;
     
+    // 拨号相关组件
+    private EditText sipAddressInput;
+    private Button dialButton;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,6 +61,18 @@ public class ContactsActivity extends AppCompatActivity {
         // 初始化组件
         contactsListView = findViewById(R.id.contacts_list_view);
         fabAdd = findViewById(R.id.fab_add_contact);
+        
+        // 初始化拨号组件
+        sipAddressInput = findViewById(R.id.sip_address_input);
+        dialButton = findViewById(R.id.dial_button);
+        
+        // 设置拨号按钮点击事件
+        dialButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialSipAddress();
+            }
+        });
         
         // 初始化联系人管理器
         contactManager = ContactManager.getInstance(this);
@@ -77,6 +96,9 @@ public class ContactsActivity extends AppCompatActivity {
                 showContactOptionsDialog(contact);
             }
         });
+        
+        // 检查SIP登录状态
+        checkSipRegistrationStatus();
     }
     
     @Override
@@ -84,6 +106,50 @@ public class ContactsActivity extends AppCompatActivity {
         super.onResume();
         // 刷新联系人列表
         loadContacts();
+        // 检查SIP登录状态
+        checkSipRegistrationStatus();
+    }
+    
+    /**
+     * 检查SIP登录状态
+     */
+    private void checkSipRegistrationStatus() {
+        LinphoneManager linphoneManager = LinphoneManager.getInstance();
+        if (!linphoneManager.isRegistered()) {
+            // 更新UI状态，显示未登录提示
+            updateLoginStatus(false);
+        } else {
+            // 更新UI状态，显示已登录信息
+            updateLoginStatus(true);
+        }
+    }
+    
+    /**
+     * 更新登录状态UI
+     */
+    private void updateLoginStatus(boolean isLoggedIn) {
+        if (isLoggedIn) {
+            // 已登录状态
+            LinphoneManager linphoneManager = LinphoneManager.getInstance();
+            String username = linphoneManager.getUsername();
+            String domain = linphoneManager.getDomain();
+            
+            // 更新状态栏提示
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setSubtitle("已登录: " + username + "@" + domain);
+            }
+            
+            // 解锁拨号功能
+            dialButton.setEnabled(true);
+        } else {
+            // 未登录状态
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setSubtitle("未登录SIP");
+            }
+            
+            // 禁用拨号功能
+            dialButton.setEnabled(false);
+        }
     }
     
     /**
@@ -177,8 +243,8 @@ public class ContactsActivity extends AppCompatActivity {
             builder.setPositiveButton("登录", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    // 显示SIP账号选择器
-                    showSipAccountSelector();
+                    // 显示SIP账号选择器，登录完成后自动拨号
+                    showSipAccountSelectorWithCallback(contact);
                 }
             });
             builder.setNegativeButton("取消", null);
@@ -191,11 +257,67 @@ public class ContactsActivity extends AppCompatActivity {
     }
     
     /**
-     * 登录到SIP服务器
+     * 显示SIP账号选择器并在登录后回调
      */
-    private void loginToSip(Contact contact) {
-        // 显示SIP账号选择器
-        showSipAccountSelector();
+    private void showSipAccountSelectorWithCallback(Contact contact) {
+        final String[] accounts = {
+            "1001", "1002", "1003", "1004", "1005", 
+            "1006", "1007", "1008", "1009", "1010"
+        };
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("选择SIP账号");
+        builder.setItems(accounts, (dialog, which) -> {
+            String username = accounts[which];
+            
+            // 登录后自动拨号
+            loginToSipWithAccountAndCall(username, which, contact);
+        });
+        builder.show();
+    }
+    
+    /**
+     * 登录SIP账号并拨号
+     */
+    private void loginToSipWithAccountAndCall(String username, int accountIndex, Contact contact) {
+        final String password = "1234"; // FreeSwitch默认密码
+        final String domain = "10.29.206.148"; // FreeSwitch服务器IP
+        final String port = "5060"; // 默认端口
+        final String transport = "udp"; // 默认传输协议
+        
+        Log.d(TAG, "使用FreeSWITCH账号登录: " + username);
+        Toast.makeText(this, "正在登录SIP账号: " + username, Toast.LENGTH_SHORT).show();
+        
+        LinphoneManager.getInstance().login(
+                username, password, domain, port, transport,
+                new LinphoneManager.SipCallback() {
+                    @Override
+                    public void onSuccess() {
+                        runOnUiThread(() -> {
+                            Log.i(TAG, "SIP登录成功");
+                            Toast.makeText(ContactsActivity.this, "SIP登录成功", Toast.LENGTH_SHORT).show();
+                            
+                            // 更新UI状态
+                            updateLoginStatus(true);
+                            
+                            // 登录成功后自动拨号
+                            startCall(contact);
+                        });
+                    }
+                    
+                    @Override
+                    public void onLoginStarted() {
+                        Log.d(TAG, "SIP登录开始");
+                    }
+                    
+                    @Override
+                    public void onError(String errorMessage) {
+                        Log.e(TAG, "SIP登录错误: " + errorMessage);
+                        runOnUiThread(() -> {
+                            showSipErrorDialog("SIP登录失败", errorMessage);
+                        });
+                    }
+                });
     }
     
     /**
@@ -408,6 +530,36 @@ public class ContactsActivity extends AppCompatActivity {
         builder.show();
     }
     
+    /**
+     * 根据输入拨打SIP地址
+     */
+    private void dialSipAddress() {
+        String sipUsername = sipAddressInput.getText().toString().trim();
+        
+        if (sipUsername.isEmpty()) {
+            Toast.makeText(this, "请输入SIP账号", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // 构造一个临时联系人对象用于拨号
+        Contact tempContact = new Contact(
+                "temp_" + System.currentTimeMillis(),
+                sipUsername,
+                "SIP: " + sipUsername,
+                "aioutfitapp.local"
+        );
+        
+        // 检查SIP是否已注册，如已注册则直接拨号
+        LinphoneManager linphoneManager = LinphoneManager.getInstance();
+        if (linphoneManager.isRegistered()) {
+            // 已登录，直接拨号
+            startCall(tempContact);
+        } else {
+            // 未登录，先登录再拨号
+            callContact(tempContact);
+        }
+    }
+    
     @Override
     public boolean onSupportNavigateUp() {
         onBackPressed();
@@ -429,6 +581,9 @@ public class ContactsActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.action_sip_status) {
             showSipStatus();
+            return true;
+        } else if (id == R.id.action_sip_logout) {
+            logoutFromSip();
             return true;
         }
         
@@ -508,6 +663,32 @@ public class ContactsActivity extends AppCompatActivity {
             Toast.makeText(this, "正在登录SIP账号: " + username, Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(this, "SIP账号初始化失败: " + username, Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    /**
+     * 从SIP服务器注销
+     */
+    private void logoutFromSip() {
+        LinphoneManager linphoneManager = LinphoneManager.getInstance();
+        
+        if (linphoneManager.isRegistered()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("注销SIP");
+            builder.setMessage("确定要注销当前SIP账号吗？");
+            builder.setPositiveButton("确定", (dialog, which) -> {
+                // 执行注销
+                linphoneManager.logout();
+                // 清除保存的凭据
+                linphoneManager.clearSipCredentials();
+                // 更新UI
+                updateLoginStatus(false);
+                Toast.makeText(this, "已成功注销SIP账号", Toast.LENGTH_SHORT).show();
+            });
+            builder.setNegativeButton("取消", null);
+            builder.show();
+        } else {
+            Toast.makeText(this, "当前未登录SIP账号", Toast.LENGTH_SHORT).show();
         }
     }
 } 
