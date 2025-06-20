@@ -6,6 +6,7 @@ import com.example.aioutfitapp.security.service.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -31,6 +32,7 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@Order(2) // 优先级低于FreeSwitchSecurityConfig
 public class WebSecurityConfig {
     
     /**
@@ -102,18 +104,45 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // 禁用CSRF保护以允许POST请求
             .csrf(csrf -> csrf.disable())
+            
+            // 异常处理
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
+            
+            // 会话管理
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> 
-                auth.requestMatchers("/auth/**").permitAll()
-                    .requestMatchers("/test/**").permitAll()
-                    .anyRequest().authenticated()
-            );
+            
+            // 请求授权配置
+            .authorizeHttpRequests(auth -> {
+                try {
+                    // FreeSWITCH XML请求 - 完全放行，不需要认证
+                    auth
+                        .requestMatchers("/api/freeswitch/xml").permitAll()
+                        .requestMatchers("/freeswitch/xml").permitAll()
+                        
+                        // 身份验证端点
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
+                        
+                        // 测试端点
+                        .requestMatchers("/api/test/**").permitAll()
+                        .requestMatchers("/test/**").permitAll()
+                        
+                        // 所有其他请求需要认证
+                        .anyRequest().authenticated();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            })
+            
+            // CORS配置
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()));
         
+        // 设置认证提供者
         http.authenticationProvider(authenticationProvider());
-
+        
+        // 添加JWT过滤器
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
         
         return http.build();

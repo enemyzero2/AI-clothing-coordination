@@ -6,14 +6,17 @@ import com.example.aioutfitapp.dto.response.LoginResponse;
 import com.example.aioutfitapp.dto.response.RegisterResponse;
 import com.example.aioutfitapp.model.Role;
 import com.example.aioutfitapp.model.Role.ERole;
+import com.example.aioutfitapp.model.SipUser;
 import com.example.aioutfitapp.model.User;
 import com.example.aioutfitapp.repository.RoleRepository;
 import com.example.aioutfitapp.repository.UserRepository;
 import com.example.aioutfitapp.security.jwt.JwtUtils;
 import com.example.aioutfitapp.security.service.UserDetailsImpl;
 import com.example.aioutfitapp.service.AuthService;
+import com.example.aioutfitapp.service.SipService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -63,6 +66,24 @@ public class AuthServiceImpl implements AuthService {
      */
     @Autowired
     private JwtUtils jwtUtils;
+    
+    /**
+     * SIP服务
+     */
+    @Autowired
+    private SipService sipService;
+    
+    /**
+     * SIP服务器地址
+     */
+    @Value("${sip.server.address:localhost}")
+    private String sipServerAddress;
+    
+    /**
+     * SIP服务器端口
+     */
+    @Value("${sip.server.port:5060}")
+    private String sipServerPort;
 
     /**
      * 用户登录
@@ -93,10 +114,32 @@ public class AuthServiceImpl implements AuthService {
 
             // 更新用户最后登录时间
             User user = userRepository.findByUsername(userDetails.getUsername()).orElse(null);
+            SipUser sipUser = null;
+            
             if (user != null) {
                 user.setLastLoginDate(System.currentTimeMillis());
                 user.setToken(jwt);
                 userRepository.save(user);
+                
+                // 为用户创建或获取SIP账户
+                try {
+                    sipUser = sipService.createSipAccount(user.getId());
+                    log.info("为用户 {} 创建或获取SIP账户成功: {}", user.getUsername(), sipUser.getSipUsername());
+                } catch (Exception e) {
+                    log.error("为用户 {} 创建SIP账户失败", user.getUsername(), e);
+                }
+            }
+            
+            // 构建SIP账户信息
+            LoginResponse.SipAccount sipAccount = null;
+            if (sipUser != null) {
+                sipAccount = LoginResponse.SipAccount.builder()
+                    .sipUsername(sipUser.getSipUsername())
+                    .sipPassword(sipUser.getSipPassword())
+                    .sipDomain(sipUser.getDomain())
+                    .sipServerAddress(sipServerAddress)
+                    .sipServerPort(sipServerPort)
+                    .build();
             }
 
             // 构建用户详情对象（兼容APP端）
@@ -106,6 +149,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(userDetails.getEmail())
                 .avatar(userDetails.getAvatarUri())
                 .roles(roles)
+                .sipAccount(sipAccount)
                 .build();
 
             // 返回登录响应
@@ -120,6 +164,7 @@ public class AuthServiceImpl implements AuthService {
                     .roles(roles)
                     .avatarUri(userDetails.getAvatarUri())
                     .displayName(userDetails.getDisplayName())
+                    .sipAccount(sipAccount)
                     .user(userDetail) // 添加用户详情对象（兼容APP端）
                     .build();
         } catch (Exception e) {
@@ -179,6 +224,15 @@ public class AuthServiceImpl implements AuthService {
             
             // 保存用户
             User savedUser = userRepository.save(user);
+            
+            // 为新注册用户创建SIP账户
+            try {
+                SipUser sipUser = sipService.createSipAccount(savedUser.getId());
+                log.info("为新注册用户 {} 创建SIP账户成功: {}", savedUser.getUsername(), sipUser.getSipUsername());
+            } catch (Exception e) {
+                log.error("为新注册用户 {} 创建SIP账户失败", savedUser.getUsername(), e);
+                // 继续处理，不影响注册流程
+            }
 
             // 返回注册响应
             return RegisterResponse.builder()

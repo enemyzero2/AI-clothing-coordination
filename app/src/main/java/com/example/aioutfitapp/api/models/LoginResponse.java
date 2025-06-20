@@ -8,6 +8,7 @@ public class LoginResponse {
     private String message; // 响应消息
     private String token; // 认证令牌
     private UserDetail user; // 用户详情
+    private SipAccount sipAccount; // SIP账户信息
     
     /**
      * 构造函数
@@ -22,12 +23,14 @@ public class LoginResponse {
      * @param message 响应消息
      * @param token 认证令牌
      * @param user 用户详情
+     * @param sipAccount SIP账户信息
      */
-    public LoginResponse(boolean success, String message, String token, UserDetail user) {
+    public LoginResponse(boolean success, String message, String token, UserDetail user, SipAccount sipAccount) {
         this.success = success;
         this.message = message;
         this.token = token;
         this.user = user;
+        this.sipAccount = sipAccount;
     }
     
     // Getter 和 Setter 方法
@@ -62,5 +65,13 @@ public class LoginResponse {
     
     public void setUser(UserDetail user) {
         this.user = user;
+    }
+    
+    public SipAccount getSipAccount() {
+        return sipAccount;
+    }
+    
+    public void setSipAccount(SipAccount sipAccount) {
+        this.sipAccount = sipAccount;
     }
 } 

@@ -345,11 +345,46 @@ public class MainActivity extends AppCompatActivity {
                 linphoneManager.init(this);
                 linphoneManager.start();
                 Log.d(TAG, "LinphoneManager初始化成功");
+            }
+            
+            // 尝试从SharedPreferences读取SIP账户信息
+            android.content.SharedPreferences prefs = getSharedPreferences(App.PREF_NAME, MODE_PRIVATE);
+            String sipUsername = prefs.getString(App.PREF_SIP_USERNAME, "");
+            String sipPassword = prefs.getString(App.PREF_SIP_PASSWORD, "");
+            String sipDomain = prefs.getString(App.PREF_SIP_DOMAIN, "");
+            String sipServerAddress = prefs.getString(App.PREF_SIP_SERVER_ADDRESS, "");
+            String sipServerPort = prefs.getString(App.PREF_SIP_SERVER_PORT, App.DEF_SIP_PORT);
+            
+            // 如果有保存的SIP账户信息，尝试登录
+            if (!sipUsername.isEmpty() && !sipPassword.isEmpty()) {
+                // 使用实际服务器地址，而非域名
+                String serverAddress = sipServerAddress.isEmpty() ? sipDomain : sipServerAddress;
                 
-                // 添加FreeSwitch测试账号登录
-                // 注意：这里只是为了测试，实际应用中应该在用户登录后进行SIP账号注册
-                // linphoneManager.login("1001", "1234", "10.29.206.148", "5060", "UDP", null);
-                // Log.d(TAG, "FreeSwitch账号登录请求已发送");
+                Log.d(TAG, "尝试使用保存的SIP账户信息自动登录: " + sipUsername + "@" + serverAddress);
+                
+                // 注册SIP账户
+                linphoneManager.login(sipUsername, sipPassword, 
+                        serverAddress, sipServerPort, App.DEF_SIP_TRANSPORT,
+                        new LinphoneManager.SipCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "保存的SIP账户注册成功: " + sipUsername);
+                        Toast.makeText(MainActivity.this, "SIP账户注册成功", Toast.LENGTH_SHORT).show();
+                    }
+                    
+                    @Override
+                    public void onLoginStarted() {
+                        Log.d(TAG, "保存的SIP账户注册开始: " + sipUsername);
+                    }
+                    
+                    @Override
+                    public void onError(String errorMessage) {
+                        Log.e(TAG, "保存的SIP账户注册失败: " + errorMessage);
+                        Toast.makeText(MainActivity.this, "SIP账户注册失败: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else {
+                Log.d(TAG, "没有找到保存的SIP账户信息，跳过自动登录");
             }
         } catch (Exception e) {
             Log.e(TAG, "初始化LinphoneManager失败", e);

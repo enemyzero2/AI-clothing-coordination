@@ -1,0 +1,414 @@
+F:.
+├───.gradle
+│   ├───8.10.2
+│   │   ├───checksums
+│   │   ├───dependencies-accessors
+│   │   ├───executionHistory
+│   │   ├───expanded
+│   │   ├───fileChanges
+│   │   ├───fileHashes
+│   │   └───vcsMetadata
+│   ├───buildOutputCleanup
+│   └───vcs-1
+├───.idea
+│   └───caches
+├───app
+│   ├───build
+│   │   ├───generated
+│   │   │   ├───ap_generated_sources
+│   │   │   │   └───debug
+│   │   │   │       └───out
+│   │   │   └───res
+│   │   │       ├───pngs
+│   │   │       │   └───debug
+│   │   │       └───resValues
+│   │   │           └───debug
+│   │   ├───intermediates
+│   │   │   ├───aar_metadata_check
+│   │   │   │   └───debug
+│   │   │   │       └───checkDebugAarMetadata
+│   │   │   ├───annotation_processor_list
+│   │   │   │   └───debug
+│   │   │   │       └───javaPreCompileDebug
+│   │   │   ├───apk
+│   │   │   │   └───debug
+│   │   │   ├───apk_ide_redirect_file
+│   │   │   │   └───debug
+│   │   │   │       └───createDebugApkListingFileRedirect
+│   │   │   ├───app_metadata
+│   │   │   │   └───debug
+│   │   │   │       └───writeDebugAppMetadata
+│   │   │   ├───assets
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugAssets
+│   │   │   │           └───org.linphone.core
+│   │   │   │               └───share
+│   │   │   │                   ├───belr
+│   │   │   │                   │   └───grammars
+│   │   │   │                   ├───images
+│   │   │   │                   ├───linphone
+│   │   │   │                   └───sounds
+│   │   │   │                       └───linphone
+│   │   │   │                           └───rings
+│   │   │   ├───compatible_screen_manifest
+│   │   │   │   └───debug
+│   │   │   │       └───createDebugCompatibleScreenManifests
+│   │   │   ├───compile_and_runtime_not_namespaced_r_class_jar
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugResources
+│   │   │   ├───compressed_assets
+│   │   │   │   └───debug
+│   │   │   │       └───compressDebugAssets
+│   │   │   │           └───out
+│   │   │   │               └───assets
+│   │   │   │                   └───org.linphone.core
+│   │   │   │                       └───share
+│   │   │   │                           ├───belr
+│   │   │   │                           │   └───grammars
+│   │   │   │                           ├───images
+│   │   │   │                           ├───linphone
+│   │   │   │                           └───sounds
+│   │   │   │                               └───linphone
+│   │   │   │                                   └───rings
+│   │   │   ├───data_binding_layout_info_type_merge
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugResources
+│   │   │   │           └───out
+│   │   │   ├───data_binding_layout_info_type_package
+│   │   │   │   └───debug
+│   │   │   │       └───packageDebugResources
+│   │   │   │           └───out
+│   │   │   ├───desugar_graph
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   │               ├───currentProject
+│   │   │   │               │   ├───dirs_bucket_0
+│   │   │   │               │   ├───dirs_bucket_1
+│   │   │   │               │   ├───dirs_bucket_2
+│   │   │   │               │   ├───dirs_bucket_3
+│   │   │   │               │   ├───dirs_bucket_4
+│   │   │   │               │   ├───dirs_bucket_5
+│   │   │   │               │   ├───jar_322b031e1a849f91482ec02d5aa93de96643d3ba621d2db9c005009ae6b171e6_bucket_0
+│   │   │   │               │   ├───jar_322b031e1a849f91482ec02d5aa93de96643d3ba621d2db9c005009ae6b171e6_bucket_1
+│   │   │   │               │   ├───jar_322b031e1a849f91482ec02d5aa93de96643d3ba621d2db9c005009ae6b171e6_bucket_2
+│   │   │   │               │   ├───jar_322b031e1a849f91482ec02d5aa93de96643d3ba621d2db9c005009ae6b171e6_bucket_3
+│   │   │   │               │   ├───jar_322b031e1a849f91482ec02d5aa93de96643d3ba621d2db9c005009ae6b171e6_bucket_4
+│   │   │   │               │   └───jar_322b031e1a849f91482ec02d5aa93de96643d3ba621d2db9c005009ae6b171e6_bucket_5
+│   │   │   │               ├───externalLibs
+│   │   │   │               ├───mixedScopes
+│   │   │   │               └───otherProjects
+│   │   │   ├───dex
+│   │   │   │   └───debug
+│   │   │   │       ├───mergeExtDexDebug
+│   │   │   │       ├───mergeLibDexDebug
+│   │   │   │       │   ├───0
+│   │   │   │       │   ├───1
+│   │   │   │       │   ├───10
+│   │   │   │       │   ├───11
+│   │   │   │       │   ├───12
+│   │   │   │       │   ├───13
+│   │   │   │       │   ├───14
+│   │   │   │       │   ├───15
+│   │   │   │       │   ├───2
+│   │   │   │       │   ├───3
+│   │   │   │       │   ├───4
+│   │   │   │       │   ├───5
+│   │   │   │       │   ├───6
+│   │   │   │       │   ├───7
+│   │   │   │       │   ├───8
+│   │   │   │       │   └───9
+│   │   │   │       └───mergeProjectDexDebug
+│   │   │   │           ├───0
+│   │   │   │           ├───1
+│   │   │   │           ├───10
+│   │   │   │           ├───11
+│   │   │   │           ├───12
+│   │   │   │           ├───13
+│   │   │   │           ├───14
+│   │   │   │           ├───15
+│   │   │   │           ├───2
+│   │   │   │           ├───3
+│   │   │   │           ├───4
+│   │   │   │           ├───5
+│   │   │   │           ├───6
+│   │   │   │           ├───7
+│   │   │   │           ├───8
+│   │   │   │           └───9
+│   │   │   ├───dex_archive_input_jar_hashes
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   ├───dex_number_of_buckets_file
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   ├───duplicate_classes_check
+│   │   │   │   └───debug
+│   │   │   │       └───checkDebugDuplicateClasses
+│   │   │   ├───external_file_lib_dex_archives
+│   │   │   │   └───debug
+│   │   │   │       └───desugarDebugFileDependencies
+│   │   │   ├───external_libs_dex_archive
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   ├───external_libs_dex_archive_with_artifact_transforms
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   ├───global_synthetics_dex
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugGlobalSynthetics
+│   │   │   ├───global_synthetics_external_lib
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   ├───global_synthetics_external_libs_artifact_transform
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   ├───global_synthetics_file_lib
+│   │   │   │   └───debug
+│   │   │   │       └───desugarDebugFileDependencies
+│   │   │   ├───global_synthetics_mixed_scope
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   ├───global_synthetics_project
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   ├───global_synthetics_subproject
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   ├───incremental
+│   │   │   │   ├───debug
+│   │   │   │   │   ├───mergeDebugResources
+│   │   │   │   │   │   ├───merged.dir
+│   │   │   │   │   │   └───stripped.dir
+│   │   │   │   │   └───packageDebugResources
+│   │   │   │   │       ├───merged.dir
+│   │   │   │   │       └───stripped.dir
+│   │   │   │   ├───debug-mergeJavaRes
+│   │   │   │   │   └───zip-cache
+│   │   │   │   ├───mergeDebugAssets
+│   │   │   │   ├───mergeDebugJniLibFolders
+│   │   │   │   ├───mergeDebugShaders
+│   │   │   │   ├───packageDebug
+│   │   │   │   │   └───tmp
+│   │   │   │   │       └───debug
+│   │   │   │   │           └───zip-cache
+│   │   │   │   └───processDebugResources
+│   │   │   ├───javac
+│   │   │   │   └───debug
+│   │   │   │       └───compileDebugJavaWithJavac
+│   │   │   │           └───classes
+│   │   │   │               └───com
+│   │   │   │                   └───example
+│   │   │   │                       └───aioutfitapp
+│   │   │   │                           ├───api
+│   │   │   │                           │   └───models
+│   │   │   │                           ├───model
+│   │   │   │                           └───network
+│   │   │   ├───java_res
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugJavaRes
+│   │   │   │           └───out
+│   │   │   │               └───com
+│   │   │   │                   └───example
+│   │   │   │                       └───aioutfitapp
+│   │   │   │                           ├───api
+│   │   │   │                           │   └───models
+│   │   │   │                           ├───model
+│   │   │   │                           └───network
+│   │   │   ├───linked_resources_binary_format
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugResources
+│   │   │   ├───local_only_symbol_list
+│   │   │   │   └───debug
+│   │   │   │       └───parseDebugLocalResources
+│   │   │   ├───manifest_merge_blame_file
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugMainManifest
+│   │   │   ├───merged_java_res
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugJavaResource
+│   │   │   ├───merged_jni_libs
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugJniLibFolders
+│   │   │   │           └───out
+│   │   │   ├───merged_manifest
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugMainManifest
+│   │   │   ├───merged_manifests
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugManifest
+│   │   │   ├───merged_native_libs
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugNativeLibs
+│   │   │   │           └───out
+│   │   │   │               └───lib
+│   │   │   │                   ├───arm64-v8a
+│   │   │   │                   ├───armeabi-v7a
+│   │   │   │                   ├───x86
+│   │   │   │                   └───x86_64
+│   │   │   ├───merged_res
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugResources
+│   │   │   ├───merged_res_blame_folder
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugResources
+│   │   │   │           └───out
+│   │   │   │               ├───multi-v2
+│   │   │   │               └───single
+│   │   │   ├───merged_shaders
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugShaders
+│   │   │   │           └───out
+│   │   │   ├───merged_test_only_native_libs
+│   │   │   │   └───debug
+│   │   │   │       └───mergeDebugNativeLibs
+│   │   │   │           └───out
+│   │   │   ├───mixed_scope_dex_archive
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   ├───navigation_json
+│   │   │   │   └───debug
+│   │   │   │       └───extractDeepLinksDebug
+│   │   │   ├───nested_resources_validation_report
+│   │   │   │   └───debug
+│   │   │   │       └───generateDebugResources
+│   │   │   ├───packaged_manifests
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugManifestForPackage
+│   │   │   ├───packaged_res
+│   │   │   │   └───debug
+│   │   │   │       └───packageDebugResources
+│   │   │   │           ├───color
+│   │   │   │           ├───drawable
+│   │   │   │           ├───layout
+│   │   │   │           ├───menu
+│   │   │   │           ├───mipmap-hdpi-v4
+│   │   │   │           ├───values
+│   │   │   │           └───xml
+│   │   │   ├───project_dex_archive
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   │               └───com
+│   │   │   │                   └───example
+│   │   │   │                       └───aioutfitapp
+│   │   │   │                           ├───activity
+│   │   │   │                           ├───api
+│   │   │   │                           │   └───models
+│   │   │   │                           ├───model
+│   │   │   │                           └───network
+│   │   │   ├───runtime_symbol_list
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugResources
+│   │   │   ├───signing_config_versions
+│   │   │   │   └───debug
+│   │   │   │       └───writeDebugSigningConfigVersions
+│   │   │   ├───source_set_path_map
+│   │   │   │   └───debug
+│   │   │   │       └───mapDebugSourceSetPaths
+│   │   │   ├───stable_resource_ids_file
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugResources
+│   │   │   ├───stripped_native_libs
+│   │   │   │   └───debug
+│   │   │   │       └───stripDebugDebugSymbols
+│   │   │   │           └───out
+│   │   │   │               └───lib
+│   │   │   │                   ├───arm64-v8a
+│   │   │   │                   ├───armeabi-v7a
+│   │   │   │                   ├───x86
+│   │   │   │                   └───x86_64
+│   │   │   ├───sub_project_dex_archive
+│   │   │   │   └───debug
+│   │   │   │       └───dexBuilderDebug
+│   │   │   │           └───out
+│   │   │   ├───symbol_list_with_package_name
+│   │   │   │   └───debug
+│   │   │   │       └───processDebugResources
+│   │   │   └───validate_signing_config
+│   │   │       └───debug
+│   │   │           └───validateSigningDebug
+│   │   ├───outputs
+│   │   │   ├───apk
+│   │   │   │   └───debug
+│   │   │   └───logs
+│   │   └───tmp
+│   │       └───compileDebugJavaWithJavac
+│   │           └───compileTransaction
+│   │               ├───backup-dir
+│   │               └───stash-dir
+│   └───src
+│       └───main
+│           ├───assets
+│           ├───java
+│           │   └───com
+│           │       └───example
+│           │           └───aioutfitapp
+│           │               ├───api
+│           │               │   └───models
+│           │               ├───model
+│           │               └───network
+│           └───res
+│               ├───color
+│               ├───drawable
+│               ├───drawable-xxhdpi
+│               ├───layout
+│               ├───menu
+│               ├───mipmap-hdpi
+│               ├───values
+│               └───xml
+├───asterisk
+├───backend
+│   ├───src
+│   │   └───main
+│   │       ├───java
+│   │       │   └───com
+│   │       │       └───example
+│   │       │           └───aioutfitapp
+│   │       │               ├───config
+│   │       │               ├───controller
+│   │       │               ├───dto
+│   │       │               │   ├───request
+│   │       │               │   └───response
+│   │       │               ├───model
+│   │       │               ├───repository
+│   │       │               ├───security
+│   │       │               │   ├───jwt
+│   │       │               │   └───service
+│   │       │               └───service
+│   │       │                   └───impl
+│   │       └───resources
+│   └───target
+│       ├───classes
+│       │   └───com
+│       │       └───example
+│       │           └───aioutfitapp
+│       │               ├───config
+│       │               ├───controller
+│       │               ├───dto
+│       │               │   ├───request
+│       │               │   └───response
+│       │               ├───model
+│       │               ├───repository
+│       │               ├───security
+│       │               │   ├───jwt
+│       │               │   └───service
+│       │               └───service
+│       │                   └───impl
+│       ├───generated-sources
+│       │   └───annotations
+│       └───maven-status
+│           └───maven-compiler-plugin
+│               └───compile
+│                   └───default-compile
+├───certs
+├───gradle
+│   └───wrapper
+└───sql

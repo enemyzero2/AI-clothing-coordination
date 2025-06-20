@@ -1,7 +1,7 @@
 # AI衣搭 - 后端API服务
 
 ## 项目概述
-AI衣搭应用的后端API服务，提供用户认证、衣物管理、搭配推荐等RESTful接口。
+AI衣搭应用的后端API服务，提供用户认证、衣物管理、搭配推荐等RESTful接口。同时提供FreeSWITCH的mod_xml_curl接口，支持SIP用户自动注册。
 
 ## 技术栈
 - Spring Boot 2.7.5
@@ -10,6 +10,7 @@ AI衣搭应用的后端API服务，提供用户认证、衣物管理、搭配推
 - MySQL 8.0
 - JWT认证
 - Maven
+- FreeSWITCH mod_xml_curl集成
 
 ## 开发环境配置
 1. 安装Java JDK 11或更高版本
@@ -31,17 +32,24 @@ AI衣搭应用的后端API服务，提供用户认证、衣物管理、搭配推
    spring.datasource.password=your-password
    ```
 
-2. 构建项目：
+2. 更新SIP配置：
+   ```properties
+   sip.domain=your-freeswitch-domain
+   sip.server.address=your-freeswitch-server-ip
+   sip.server.port=5060
+   ```
+
+3. 构建项目：
    ```bash
    mvn clean package
    ```
 
-3. 运行项目：
+4. 运行项目：
    ```bash
    java -jar target/aioutfitapp-0.0.1-SNAPSHOT.jar
    ```
 
-4. 也可直接在开发环境中运行：
+5. 也可直接在开发环境中运行：
    ```bash
    mvn spring-boot:run
    ```
@@ -92,10 +100,36 @@ AI衣搭应用的后端API服务，提供用户认证、衣物管理、搭配推
     "id": "user-id",
     "username": "your-username",
     "email": "your-email@example.com",
-    "roles": ["ROLE_USER"]
+    "roles": ["ROLE_USER"],
+    "sipAccount": {
+      "sipUsername": "sip-username",
+      "sipPassword": "sip-password",
+      "sipDomain": "sip-domain",
+      "sipServerAddress": "sip-server-address",
+      "sipServerPort": "sip-server-port"
+    }
   }
   ```
 
+### SIP用户API
+
+#### 获取SIP账户信息
+- URL: `/api/sip/account`
+- 方法: GET
+- 请求头: Authorization: Bearer your-jwt-token
+- 响应:
+  ```json
+  {
+    "success": true,
+    "sipUsername": "sip-username",
+    "sipPassword": "sip-password",
+    "sipDomain": "sip-domain",
+    "sipServerAddress": "sip-server-address",
+    "sipServerPort": "sip-server-port"
+  }
+  ```
+
+#### 获取SIP账户列表
 ## 安全配置
 - 所有API都需要进行认证，除了`/api/auth/**`和`/api/test/**`
 - 使用JWT令牌进行认证，令牌有效期为24小时

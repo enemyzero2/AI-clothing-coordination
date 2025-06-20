@@ -6,6 +6,7 @@ import android.media.AudioManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
+import android.content.Intent;
 
 import org.linphone.core.Account;
 import org.linphone.core.AccountParams;
@@ -356,6 +357,9 @@ public class LinphoneManager {
                         if (listener != null) {
                             listener.onIncomingCall(callerId, callType);
                         }
+                        
+                        // 直接启动来电界面
+                        startIncomingCallActivity(callerId, callType);
                         break;
                     case Connected:
                         Log.d(TAG, "通话已连接");
@@ -1946,5 +1950,36 @@ public class LinphoneManager {
          * @param maxRetries 最大重试次数
          */
         default void onRetryScheduled(int currentRetry, int maxRetries) {}
+    }
+
+    /**
+     * 启动来电界面
+     * 
+     * @param callerId 来电者ID
+     * @param callType 通话类型
+     */
+    private void startIncomingCallActivity(String callerId, int callType) {
+        try {
+            if (context == null) {
+                Log.e(TAG, "无法启动来电界面：上下文为空");
+                return;
+            }
+            
+            // 创建启动通话界面的Intent
+            Intent intent = new Intent(context, com.example.aioutfitapp.CallActivity.class);
+            intent.putExtra(com.example.aioutfitapp.CallActivity.EXTRA_CALL_TYPE, callType);
+            intent.putExtra(com.example.aioutfitapp.CallActivity.EXTRA_CALLER_ID, callerId);
+            intent.putExtra(com.example.aioutfitapp.CallActivity.EXTRA_IS_INCOMING, true);
+            intent.putExtra(com.example.aioutfitapp.CallActivity.EXTRA_ROOM_ID, "incoming-call");
+            
+            // 添加必要的标志，确保可以从非Activity上下文启动
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            
+            // 启动活动
+            context.startActivity(intent);
+            Log.d(TAG, "已启动来电界面：" + callerId);
+        } catch (Exception e) {
+            Log.e(TAG, "启动来电界面出错: " + e.getMessage(), e);
+        }
     }
 } 

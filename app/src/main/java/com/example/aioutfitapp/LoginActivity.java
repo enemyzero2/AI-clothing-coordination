@@ -31,6 +31,8 @@ import com.example.aioutfitapp.api.ApiClient;
 import com.example.aioutfitapp.api.ApiService;
 import com.example.aioutfitapp.api.models.LoginRequest;
 import com.example.aioutfitapp.api.models.LoginResponse;
+import com.example.aioutfitapp.api.models.SipAccount;
+import com.example.aioutfitapp.network.LinphoneManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -265,6 +267,9 @@ public class LoginActivity extends AppCompatActivity {
                         
                         // 保存认证令牌
                         ApiClient.setAuthToken(loginResponse.getToken());
+                        
+                        // 注册SIP账户
+                        registerSipAccount(loginResponse);
                         
                         // 跳转到主页
                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
@@ -633,6 +638,164 @@ public class LoginActivity extends AppCompatActivity {
         if (dayNightAnimatorSet != null) {
             dayNightAnimatorSet.cancel();
             dayNightAnimatorSet = null;
+        }
+    }
+
+    /**
+     * 注册SIP账户
+     * 
+     * @param loginResponse 登录响应
+     */
+    private void registerSipAccount(LoginResponse loginResponse) {
+        try {
+            // 检查是否有SIP账户信息
+            if (loginResponse.getSipAccount() != null) {
+                SipAccount sipAccount = loginResponse.getSipAccount();
+                
+                String sipUsername = sipAccount.getSipUsername();
+                String sipPassword = sipAccount.getSipPassword();
+                String sipDomain = sipAccount.getSipDomain();
+                String sipServerAddress = sipAccount.getSipServerAddress();
+                String sipServerPort = sipAccount.getSipServerPort();
+                
+                if (sipUsername != null && !sipUsername.isEmpty() && 
+                    sipPassword != null && !sipPassword.isEmpty()) {
+                    
+                    // 保存SIP账户信息到SharedPreferences
+                    saveSipAccountInfo(sipUsername, sipPassword, sipDomain, sipServerAddress, sipServerPort);
+                    
+                    Log.d(TAG, "开始注册SIP账户: " + sipUsername + "@" + sipDomain);
+                    
+                    // 使用实际服务器地址，而非域名
+                    String serverAddress = sipServerAddress != null && !sipServerAddress.isEmpty() 
+                            ? sipServerAddress : sipDomain;
+                    
+                    // 使用默认端口如果未指定
+                    String serverPort = sipServerPort != null && !sipServerPort.isEmpty() 
+                            ? sipServerPort : App.DEF_SIP_PORT;
+                    
+                    // 使用默认传输协议
+                    String transport = App.DEF_SIP_TRANSPORT;
+                    
+                    // 注册SIP账户
+                    LinphoneManager.getInstance().login(sipUsername, sipPassword, 
+                            serverAddress, serverPort, transport, new LinphoneManager.SipCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d(TAG, "SIP账户注册成功: " + sipUsername);
+                            Toast.makeText(LoginActivity.this, "SIP账户注册成功", Toast.LENGTH_SHORT).show();
+                        }
+                        
+                        @Override
+                        public void onLoginStarted() {
+                            Log.d(TAG, "SIP账户注册开始: " + sipUsername);
+                        }
+                        
+                        @Override
+                        public void onError(String errorMessage) {
+                            Log.e(TAG, "SIP账户注册失败: " + errorMessage);
+                            Toast.makeText(LoginActivity.this, "SIP账户注册失败: " + errorMessage, Toast.LENGTH_SHORT).show();
+                        }
+                        
+                        @Override
+                        public void onRetryScheduled(int currentRetry, int maxRetries) {
+                            Log.d(TAG, "SIP账户注册重试: " + currentRetry + "/" + maxRetries);
+                        }
+                    });
+                } else {
+                    Log.w(TAG, "SIP账户信息不完整，跳过注册");
+                }
+            } else if (loginResponse.getUser() != null && loginResponse.getUser().getSipAccount() != null) {
+                // 尝试从user对象中获取SIP账户信息
+                SipAccount sipAccount = loginResponse.getUser().getSipAccount();
+                
+                String sipUsername = sipAccount.getSipUsername();
+                String sipPassword = sipAccount.getSipPassword();
+                String sipDomain = sipAccount.getSipDomain();
+                String sipServerAddress = sipAccount.getSipServerAddress();
+                String sipServerPort = sipAccount.getSipServerPort();
+                
+                if (sipUsername != null && !sipUsername.isEmpty() && 
+                    sipPassword != null && !sipPassword.isEmpty()) {
+                    
+                    // 保存SIP账户信息到SharedPreferences
+                    saveSipAccountInfo(sipUsername, sipPassword, sipDomain, sipServerAddress, sipServerPort);
+                    
+                    Log.d(TAG, "开始注册SIP账户(从user对象): " + sipUsername + "@" + sipDomain);
+                    
+                    // 使用实际服务器地址，而非域名
+                    String serverAddress = sipServerAddress != null && !sipServerAddress.isEmpty() 
+                            ? sipServerAddress : sipDomain;
+                    
+                    // 使用默认端口如果未指定
+                    String serverPort = sipServerPort != null && !sipServerPort.isEmpty() 
+                            ? sipServerPort : App.DEF_SIP_PORT;
+                    
+                    // 使用默认传输协议
+                    String transport = App.DEF_SIP_TRANSPORT;
+                    
+                    // 注册SIP账户
+                    LinphoneManager.getInstance().login(sipUsername, sipPassword, 
+                            serverAddress, serverPort, transport, new LinphoneManager.SipCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d(TAG, "SIP账户注册成功(从user对象): " + sipUsername);
+                            Toast.makeText(LoginActivity.this, "SIP账户注册成功", Toast.LENGTH_SHORT).show();
+                        }
+                        
+                        @Override
+                        public void onLoginStarted() {
+                            Log.d(TAG, "SIP账户注册开始(从user对象): " + sipUsername);
+                        }
+                        
+                        @Override
+                        public void onError(String errorMessage) {
+                            Log.e(TAG, "SIP账户注册失败(从user对象): " + errorMessage);
+                            Toast.makeText(LoginActivity.this, "SIP账户注册失败: " + errorMessage, Toast.LENGTH_SHORT).show();
+                        }
+                        
+                        @Override
+                        public void onRetryScheduled(int currentRetry, int maxRetries) {
+                            Log.d(TAG, "SIP账户注册重试(从user对象): " + currentRetry + "/" + maxRetries);
+                        }
+                    });
+                } else {
+                    Log.w(TAG, "User对象中的SIP账户信息不完整，跳过注册");
+                }
+            } else {
+                Log.w(TAG, "登录响应中未包含SIP账户信息，跳过注册");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "注册SIP账户时发生错误: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 保存SIP账户信息到SharedPreferences
+     * 
+     * @param sipUsername SIP用户名
+     * @param sipPassword SIP密码
+     * @param sipDomain SIP域名
+     * @param sipServerAddress SIP服务器地址
+     * @param sipServerPort SIP服务器端口
+     */
+    private void saveSipAccountInfo(String sipUsername, String sipPassword, String sipDomain, 
+                                   String sipServerAddress, String sipServerPort) {
+        try {
+            android.content.SharedPreferences prefs = getSharedPreferences(App.PREF_NAME, MODE_PRIVATE);
+            android.content.SharedPreferences.Editor editor = prefs.edit();
+            
+            editor.putString(App.PREF_SIP_USERNAME, sipUsername);
+            editor.putString(App.PREF_SIP_PASSWORD, sipPassword);
+            editor.putString(App.PREF_SIP_DOMAIN, sipDomain);
+            editor.putString(App.PREF_SIP_SERVER_ADDRESS, sipServerAddress);
+            editor.putString(App.PREF_SIP_SERVER_PORT, sipServerPort);
+            
+            editor.apply();
+            
+            Log.d(TAG, "SIP账户信息已保存到SharedPreferences: " + sipUsername + "@" + sipDomain);
+        } catch (Exception e) {
+            Log.e(TAG, "保存SIP账户信息失败: " + e.getMessage(), e);
         }
     }
 }

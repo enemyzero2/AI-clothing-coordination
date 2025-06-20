@@ -14,6 +14,7 @@ public class UserDetail {
     private List<String> styleTags; // 风格标签
     private BodyData bodyData; // 身材数据
     private Stats stats; // 用户统计数据
+    private SipAccount sipAccount; // SIP账户信息
     
     /**
      * 构造函数
@@ -32,9 +33,10 @@ public class UserDetail {
      * @param styleTags 风格标签
      * @param bodyData 身材数据
      * @param stats 用户统计数据
+     * @param sipAccount SIP账户信息
      */
     public UserDetail(int id, String username, String email, String avatar, String signature, 
-                      List<String> styleTags, BodyData bodyData, Stats stats) {
+                      List<String> styleTags, BodyData bodyData, Stats stats, SipAccount sipAccount) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -43,6 +45,7 @@ public class UserDetail {
         this.styleTags = styleTags;
         this.bodyData = bodyData;
         this.stats = stats;
+        this.sipAccount = sipAccount;
     }
     
     // Getter 和 Setter 方法
@@ -109,6 +112,14 @@ public class UserDetail {
     
     public void setStats(Stats stats) {
         this.stats = stats;
+    }
+    
+    public SipAccount getSipAccount() {
+        return sipAccount;
+    }
+    
+    public void setSipAccount(SipAccount sipAccount) {
+        this.sipAccount = sipAccount;
     }
     
     /**

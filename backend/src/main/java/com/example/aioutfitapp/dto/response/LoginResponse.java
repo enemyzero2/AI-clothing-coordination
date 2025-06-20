@@ -67,9 +67,29 @@ public class LoginResponse {
     private String displayName;
     
     /**
+     * SIP账户信息
+     */
+    private SipAccount sipAccount;
+    
+    /**
      * 用户对象（兼容APP端）
      */
     private UserDetail user;
+    
+    /**
+     * SIP账户信息类
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SipAccount {
+        private String sipUsername;
+        private String sipPassword;
+        private String sipDomain;
+        private String sipServerAddress;
+        private String sipServerPort;
+    }
     
     /**
      * 用户详情类（兼容APP端）
@@ -84,5 +104,6 @@ public class LoginResponse {
         private String email;
         private String avatar;
         private List<String> roles;
+        private SipAccount sipAccount;
     }
 } 

@@ -174,6 +174,12 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
         // 设置来电者信息
         callerNameView.setText(callerId);
         
+        // 使用带阴影的按钮背景
+        muteButton.setBackgroundResource(R.drawable.circle_white_shadow);
+        speakerButton.setBackgroundResource(R.drawable.circle_white_shadow);
+        switchCameraButton.setBackgroundResource(R.drawable.circle_white_shadow);
+        videoToggleButton.setBackgroundResource(R.drawable.circle_white_shadow);
+        
         // 设置按钮点击事件
         findViewById(R.id.answer_call_button).setOnClickListener(v -> onAnswerCall());
         findViewById(R.id.reject_call_button).setOnClickListener(v -> onRejectCall());
@@ -194,6 +200,19 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
             remoteVideoView.setVisibility(View.GONE);
             videoCallControls.setVisibility(View.GONE);
             callerAvatarView.setVisibility(View.VISIBLE);
+            
+            // 添加视频通话按钮到操作栏
+            ImageButton videoCallBtn = new ImageButton(this);
+            videoCallBtn.setImageResource(R.drawable.ic_video_call);
+            videoCallBtn.setBackgroundResource(R.drawable.circle_white_shadow);
+            videoCallBtn.setContentDescription("视频通话");
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    getResources().getDimensionPixelSize(android.R.dimen.app_icon_size),
+                    getResources().getDimensionPixelSize(android.R.dimen.app_icon_size));
+            params.setMargins(16, 0, 16, 0);
+            videoCallBtn.setLayoutParams(params);
+            videoCallBtn.setOnClickListener(v -> upgradeToVideoCall());
+            ongoingCallControls.addView(videoCallBtn, 0);
         }
         
         // 根据是否是来电显示不同的控制区
@@ -209,14 +228,57 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
     }
     
     /**
+     * 升级到视频通话
+     */
+    private void upgradeToVideoCall() {
+        // 如果当前是音频通话，升级为视频通话
+        if (callType == CallManager.CALL_TYPE_AUDIO && callManager.getCallState() == CallManager.CALL_STATE_CONNECTED) {
+            Toast.makeText(this, "正在升级为视频通话...", Toast.LENGTH_SHORT).show();
+            
+            callType = CallManager.CALL_TYPE_VIDEO;
+            
+            // 显示视频控件
+            localVideoView.setVisibility(View.VISIBLE);
+            remoteVideoView.setVisibility(View.VISIBLE);
+            videoCallControls.setVisibility(View.VISIBLE);
+            callerAvatarView.setVisibility(View.GONE);
+            
+            // 尝试初始化WebRTC
+            if (callManager.initializeWebRTC(localVideoView, remoteVideoView)) {
+                // 启用视频
+                callManager.setVideoEnabled(true);
+            } else {
+                Toast.makeText(this, "无法初始化视频通话", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    
+    /**
      * 初始化通话管理器
      */
     private void initCallManager() {
         callManager = CallManager.getInstance(this);
         callManager.setListener(this);
         
-        // 设置FreeSwitch服务器配置
-        callManager.setSipServerConfig("10.29.206.148", "10.29.206.148", 5060, "UDP");
+        // 从SharedPreferences获取SIP服务器配置
+        android.content.SharedPreferences prefs = getSharedPreferences(App.PREF_NAME, MODE_PRIVATE);
+        String sipServerAddress = prefs.getString(App.PREF_SIP_SERVER_ADDRESS, "127.0.0.1");
+        String sipDomain = prefs.getString(App.PREF_SIP_DOMAIN, "localhost");
+        String sipServerPort = prefs.getString(App.PREF_SIP_SERVER_PORT, "5060");
+        
+        // 使用配置设置SIP服务器
+        int port = 5060;
+        try {
+            port = Integer.parseInt(sipServerPort);
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "无效的SIP端口: " + sipServerPort + ", 使用默认端口5060", e);
+        }
+        
+        // 使用实际服务器地址，而非域名
+        String serverAddress = sipServerAddress.isEmpty() ? sipDomain : sipServerAddress;
+        
+        Log.d(TAG, "配置SIP服务器: 地址=" + serverAddress + ", 域名=" + sipDomain + ", 端口=" + port);
+        callManager.setSipServerConfig(serverAddress, sipDomain, port, "UDP");
         
         // 如果来电，使用默认账号初始化SIP服务
         if (isIncoming) {
@@ -226,26 +288,35 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
                 return;
             }
         } else {
-            // 如果是主动呼叫，显示账号选择对话框
-            if (callType == CallManager.CALL_TYPE_AUDIO) {
-                showAccountSelectionDialog();
+            // 如果是主动呼叫，直接使用当前已登录的SIP账号
+            LinphoneManager linphoneManager = LinphoneManager.getInstance();
+            if (!linphoneManager.isRegistered()) {
+                Toast.makeText(this, "SIP未登录，无法发起呼叫", Toast.LENGTH_SHORT).show();
+                finish();
                 return;
+            }
+            
+            // 显示正在使用的SIP账号信息（调试用）
+            String sipUsername = prefs.getString(App.PREF_SIP_USERNAME, "");
+            if (!sipUsername.isEmpty()) {
+                Toast.makeText(this, "使用SIP账号: " + sipUsername + "@" + sipDomain, Toast.LENGTH_SHORT).show();
+            }
+            
+            // 发起呼叫
+            if (callType == CallManager.CALL_TYPE_AUDIO) {
+                // 音频通话
+                callManager.makeAudioCall(callerId);
+                callStateView.setText("正在呼叫: " + callerId);
             } else {
-                // 视频通话暂时使用默认账号
-                if (!callManager.initializeDefaultSIP()) {
-                    Toast.makeText(this, "初始化SIP服务失败", Toast.LENGTH_SHORT).show();
+                // 视频通话
+                // 对于视频通话，初始化WebRTC
+                if (!callManager.initializeWebRTC(localVideoView, remoteVideoView)) {
+                    Toast.makeText(this, "初始化WebRTC失败", Toast.LENGTH_SHORT).show();
                     finish();
                     return;
                 }
-            }
-        }
-        
-        // 对于视频通话，初始化WebRTC
-        if (callType == CallManager.CALL_TYPE_VIDEO) {
-            if (!callManager.initializeWebRTC(localVideoView, remoteVideoView)) {
-                Toast.makeText(this, "初始化WebRTC失败", Toast.LENGTH_SHORT).show();
-                finish();
-                return;
+                callManager.makeVideoCall(callerId, roomId);
+                callStateView.setText("正在视频呼叫: " + callerId);
             }
         }
         
@@ -253,162 +324,32 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
         if (isIncoming) {
             // 来电等待用户接听或拒绝
             callStateView.setText("来电: " + callerId);
-        } else {
-            if (callType == CallManager.CALL_TYPE_VIDEO) {
-                // 视频通话
-                callManager.makeVideoCall(callerId, roomId);
-                callStateView.setText("正在视频呼叫: " + callerId);
-            }
         }
     }
     
     /**
-     * 显示SIP账号选择对话框
+     * 显示SIP账号选择对话框（已弃用）
      */
+    @Deprecated
     private void showAccountSelectionDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("选择SIP账号");
-        
-        // 获取所有可用的SIP账号
-        final List<String> accounts = callManager.getAvailableSipAccounts();
-        final String[] accountsArray = accounts.toArray(new String[0]);
-        
-        // 显示账号信息
-        String[] displayArray = new String[accountsArray.length];
-        for (int i = 0; i < accountsArray.length; i++) {
-            displayArray[i] = accountsArray[i] + " (密码: 1234)";
-        }
-        
-        builder.setSingleChoiceItems(displayArray, 0, null);
-        
-        // 添加确定按钮
-        builder.setPositiveButton("确定", (dialog, which) -> {
-            int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
-            if (selectedPosition >= 0 && selectedPosition < accounts.size()) {
-                String selectedAccount = accounts.get(selectedPosition);
-                
-                // 设置当前账号
-                int accountIndex = selectedPosition;
-                callManager.setCurrentAccountIndex(accountIndex);
-                
-                // 初始化SIP服务
-                if (callManager.initializeSipWithAccount(selectedAccount)) {
-                    Toast.makeText(this, "已选择账号: " + selectedAccount, Toast.LENGTH_SHORT).show();
-                    
-                    // 稍等片刻后发起呼叫，确保SIP注册成功
-                    new Handler().postDelayed(() -> {
-                        if (callType == CallManager.CALL_TYPE_AUDIO) {
-                            // 音频通话
-                            showCallTargetDialog();
-                        }
-                    }, 1000);
-                } else {
-                    Toast.makeText(this, "初始化SIP服务失败", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            }
-        });
-        
-        // 添加取消按钮
-        builder.setNegativeButton("取消", (dialog, which) -> {
-            dialog.dismiss();
-            finish();
-        });
-        
-        builder.setCancelable(false);
-        builder.show();
+        // 此方法已不再使用，直接发起呼叫
+        initCallManager();
     }
     
     /**
-     * 显示呼叫目标选择对话框
+     * 显示呼叫目标选择对话框（已弃用）
      */
+    @Deprecated
     private void showCallTargetDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("选择呼叫目标");
-        
-        // 获取所有可用的SIP账号
-        final List<String> accounts = callManager.getAvailableSipAccounts();
-        final String[] accountsArray = accounts.toArray(new String[0]);
-        
-        // 从可用账号中排除当前账号
-        String currentAccount = callManager.getCurrentSipAccount();
-        List<String> targetAccounts = new ArrayList<>();
-        List<String> displayTargets = new ArrayList<>();
-        
-        for (String account : accountsArray) {
-            if (!account.equals(currentAccount)) {
-                targetAccounts.add(account);
-                displayTargets.add(account + " (FreeSwitch账号)");
-            }
-        }
-        
-        // 自定义SIP地址选项
-        displayTargets.add("自定义SIP地址...");
-        
-        builder.setSingleChoiceItems(displayTargets.toArray(new String[0]), 0, null);
-        
-        // 添加确定按钮
-        builder.setPositiveButton("呼叫", (dialog, which) -> {
-            int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
-            
-            if (selectedPosition >= 0) {
-                if (selectedPosition < targetAccounts.size()) {
-                    // 呼叫选定的FreeSwitch账号
-                    String targetAccount = targetAccounts.get(selectedPosition);
-                    callerId = targetAccount;
-                    callManager.callFreeSwitchAccount(targetAccount);
-                    callStateView.setText("正在呼叫: " + callerId);
-                } else {
-                    // 用户选择了自定义SIP地址
-                    showCustomSipAddressDialog();
-                }
-            }
-        });
-        
-        // 添加取消按钮
-        builder.setNegativeButton("取消", (dialog, which) -> {
-            dialog.dismiss();
-            finish();
-        });
-        
-        builder.setCancelable(false);
-        builder.show();
+        // 此方法已不再使用，直接发起呼叫
     }
     
     /**
-     * 显示自定义SIP地址输入对话框
+     * 显示自定义SIP地址输入对话框（已弃用）
      */
+    @Deprecated
     private void showCustomSipAddressDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("输入SIP地址");
-        
-        // 创建输入框
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        input.setHint("用户名@域名 (例如: 1001@10.29.206.148)");
-        builder.setView(input);
-        
-        // 添加确定按钮
-        builder.setPositiveButton("呼叫", (dialog, which) -> {
-            String sipAddress = input.getText().toString().trim();
-            if (!sipAddress.isEmpty()) {
-                callerId = sipAddress;
-                callManager.makeAudioCall(sipAddress);
-                callStateView.setText("正在呼叫: " + callerId);
-            } else {
-                Toast.makeText(this, "请输入有效的SIP地址", Toast.LENGTH_SHORT).show();
-                finish();
-            }
-        });
-        
-        // 添加取消按钮
-        builder.setNegativeButton("取消", (dialog, which) -> {
-            dialog.dismiss();
-            finish();
-        });
-        
-        builder.setCancelable(false);
-        builder.show();
+        // 此方法已不再使用，直接发起呼叫
     }
     
     /**
@@ -623,9 +564,14 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
                     startCallDurationTimer();
                     
                     // 如果是视频通话，确保视频控件可见
-                    if (callType == CallManager.CALL_TYPE_VIDEO && isVideoEnabled) {
+                    if (callType == CallManager.CALL_TYPE_VIDEO) {
                         localVideoView.setVisibility(View.VISIBLE);
                         remoteVideoView.setVisibility(View.VISIBLE);
+                        videoCallControls.setVisibility(View.VISIBLE);
+                        callerAvatarView.setVisibility(View.GONE);
+                        
+                        // 默认开启视频
+                        callManager.setVideoEnabled(true);
                     }
                     break;
                 case CallManager.CALL_STATE_ENDED:

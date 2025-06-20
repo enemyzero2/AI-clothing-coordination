@@ -17,6 +17,9 @@ public class App extends Application {
     
     private static App instance;
     
+    // SharedPreferences名称
+    public static final String PREF_NAME = "aioutfit_prefs";
+    
     // 配置常量
     public static final String PREF_VOIP_USER = "pref_voip_username";
     public static final String PREF_VOIP_PWD = "pref_voip_password";
@@ -24,7 +27,14 @@ public class App extends Application {
     public static final String PREF_VOIP_PORT = "pref_voip_server_port";
     public static final String PREF_VOIP_TRANSPORT = "pref_voip_transport_protocol";
     public static final String DEF_SIP_PORT = "5060"; // FreeSwitch默认端口
-    public static final String DEF_SIP_TRANSPORT = "UDP"; // 默认传输协议
+    public static final String DEF_SIP_TRANSPORT = "udp"; // 默认传输协议，小写
+    
+    // SIP账户保存键
+    public static final String PREF_SIP_USERNAME = "pref_sip_username";
+    public static final String PREF_SIP_PASSWORD = "pref_sip_password";
+    public static final String PREF_SIP_DOMAIN = "pref_sip_domain";
+    public static final String PREF_SIP_SERVER_ADDRESS = "pref_sip_server_address";
+    public static final String PREF_SIP_SERVER_PORT = "pref_sip_server_port";
     
     @Override
     public void onCreate() {
