@@ -264,7 +264,7 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
         android.content.SharedPreferences prefs = getSharedPreferences(App.PREF_NAME, MODE_PRIVATE);
         String sipServerAddress = prefs.getString(App.PREF_SIP_SERVER_ADDRESS, "127.0.0.1");
         String sipDomain = prefs.getString(App.PREF_SIP_DOMAIN, "localhost");
-        String sipServerPort = prefs.getString(App.PREF_SIP_SERVER_PORT, "5060");
+        String sipServerPort = prefs.getString(App.PREF_SIP_SERVER_PORT, "5060").trim();
         
         // 使用配置设置SIP服务器
         int port = 5060;
@@ -280,13 +280,12 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
         Log.d(TAG, "配置SIP服务器: 地址=" + serverAddress + ", 域名=" + sipDomain + ", 端口=" + port);
         callManager.setSipServerConfig(serverAddress, sipDomain, port, "UDP");
         
-        // 如果来电，使用默认账号初始化SIP服务
+        // 【重要】对于来电，我们假定SIP服务已在后台正确初始化和注册。
+        // 通话界面绝不应再次初始化或登录，因此删除整个 if(isIncoming) 逻辑块。
         if (isIncoming) {
-            if (!callManager.initializeDefaultSIP()) {
-                Toast.makeText(this, "初始化SIP服务失败", Toast.LENGTH_SHORT).show();
-                finish();
-                return;
-            }
+            // 什么都不做！
+            // 只是安静地等待用户按下接听或拒绝按钮。
+            Log.d(TAG, "这是一个来电，等待用户操作...");
         } else {
             // 如果是主动呼叫，直接使用当前已登录的SIP账号
             LinphoneManager linphoneManager = LinphoneManager.getInstance();
@@ -612,8 +611,29 @@ public class CallActivity extends AppCompatActivity implements CallManager.CallM
         }
         
         // 如果通话仍在进行，结束通话
-        if (callManager != null && callManager.getCallState() != CallManager.CALL_STATE_IDLE) {
-            callManager.endCall();
+        if (callManager != null) {
+            // 记录当前状态用于调试
+            int currentState = callManager.getCallState();
+            Log.d(TAG, "Activity销毁时的通话状态: " + currentState);
+            
+            if (currentState != CallManager.CALL_STATE_IDLE) {
+                Log.d(TAG, "Activity销毁时通话未结束，强制结束通话");
+                callManager.endCall();
+                
+                // 确保通话状态被重置
+                new Handler().postDelayed(() -> {
+                    // 获取LinphoneManager实例直接操作
+                    LinphoneManager linphoneManager = LinphoneManager.getInstance();
+                    if (linphoneManager.getCallState() != LinphoneManager.CALL_STATE_IDLE) {
+                        Log.d(TAG, "强制重置Linphone通话状态");
+                        linphoneManager.forceResetCallState();
+                    }
+                }, 300);
+            } else {
+                // 即使状态是IDLE，也进行一次强制检查和清理
+                Log.d(TAG, "Activity销毁时进行最终状态检查和清理");
+                LinphoneManager.getInstance().forceResetCallState();
+            }
         }
     }
 }

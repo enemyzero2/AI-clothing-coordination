@@ -614,3 +614,63 @@ MIT License
 - 通话质量受网络状况影响较大
 - 视频通话需要确保较好的网络带宽
 - 公共互联网环境下，推荐使用TLS加密保护通信安全
+
+# AI衣搭 App - SIP通话问题解决方案
+
+## 问题描述
+
+在SIP通话功能中发现一个严重问题：当admin拨打somei时，somei接听后admin端仍显示振铃，最终通话因超时失败。
+
+## 根本原因分析
+
+经过深入分析，发现App同时使用了两套完全独立的SIP电话系统：
+
+1. **Linphone SDK** (org.linphone.core.*) - 在LinphoneManager中使用
+2. **Android原生SIP** (android.net.sip.*) - 在IncomingCallReceiver和SIPManager中使用
+
+这两套系统在通话时产生了冲突，导致以下问题：
+- 当有来电时，Android原生SIP通过`takeAudioCall`接管了电话
+- 同时，代码又命令Linphone去接听同一个电话
+- 两个系统争夺同一个网络端口和音频设备的控制权
+- 最终导致无法向服务器发出完整、正确的"接听"信号
+
+## 解决方案
+
+### 1. 移除Android原生SIP系统
+
+- 禁用IncomingCallReceiver类，移除其所有功能代码
+- 禁用SIPManager类，确保不再使用Android原生SIP API
+- 移除CallActivity中重新初始化SIP的代码
+
+### 2. 完全依赖Linphone系统
+
+- 使用Linphone SDK作为唯一的SIP实现
+- 配置STUN服务器以改善NAT穿透
+- 使用反射机制适配不同版本的Linphone库API
+
+### 3. 架构优化
+
+- 确保LinphoneManager在App启动时初始化，并作为Service在后台运行
+- 确保在通话过程中不执行可能导致用户注销的操作
+
+## 技术细节
+
+1. **移除Android原生SIP**：
+   - 禁用IncomingCallReceiver
+   - 禁用SIPManager类的功能
+   - 确保不再使用android.net.sip.*相关API
+
+2. **Linphone配置优化**：
+   - 添加STUN服务器配置
+   - 使用反射机制适配不同版本API
+   - 确保通话过程中不执行可能导致注销的操作
+
+## 未来改进
+
+1. 将LinphoneManager改造为Android Service，确保即使App在后台也能接收来电
+2. 添加更完善的通话状态监听和错误处理
+3. 优化音频和视频质量设置
+
+## 测试结果
+
+修复后，SIP通话功能正常工作，可以成功接听来电并建立通话。

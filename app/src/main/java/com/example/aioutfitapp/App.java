@@ -2,9 +2,10 @@ package com.example.aioutfitapp;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
-import com.example.aioutfitapp.network.LinphoneManager;
+import com.example.aioutfitapp.network.SipService;
 
 /**
  * 应用类
@@ -43,21 +44,25 @@ public class App extends Application {
         
         Log.i(TAG, "应用启动初始化");
         
-        // 初始化Linphone管理器
-        initLinphone();
+        // 启动SIP服务，而不是直接初始化Linphone
+        startSipService();
     }
     
     /**
-     * 初始化Linphone组件
+     * 启动SIP服务
      */
-    private void initLinphone() {
+    private void startSipService() {
         try {
-            Log.d(TAG, "开始初始化Linphone");
-            LinphoneManager.getInstance().init(this);
-            LinphoneManager.getInstance().start();
-            Log.d(TAG, "Linphone初始化完成");
+            Log.d(TAG, "启动SIP服务...");
+            Intent intent = new Intent(this, SipService.class);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+            Log.d(TAG, "SIP服务启动请求已发送");
         } catch (Exception e) {
-            Log.e(TAG, "Linphone初始化失败: " + e.getMessage(), e);
+            Log.e(TAG, "启动SIP服务失败: " + e.getMessage(), e);
         }
     }
     

@@ -39,10 +39,12 @@ public class CallManager implements
     public static final int CALL_STATE_ENDED = 4;
     
     // SIP和WebRTC组件
-    private LinphoneManager linphoneManager;
+    private LinphoneManager linphoneManager;  // 使用Linphone作为唯一的SIP实现
     private WebRTCHelper webRTCHelper;
     private SignalingService signalingService;
     private NetworkSimulator networkSimulator;
+    
+    // 注意：不再使用Android原生SIP API，完全依赖Linphone
     
     // 通话参数
     private int callType = CALL_TYPE_AUDIO;
@@ -68,15 +70,19 @@ public class CallManager implements
     // 单例模式
     private static CallManager instance;
     
-    // FreeSwitch服务器配置
+    // SIP服务器配置
     private String sipServerDomain = "10.29.206.148"; 
     private String sipServerAddress = "10.29.206.148";
     private int sipServerPort = 5060;               // FreeSwitch默认SIP端口
     private String sipTransport = "UDP";            // FreeSwitch传输协议
     
-    // FreeSwitch账号配置
-    private static final int MIN_ACCOUNT_NUMBER = 1001;
-    private static final int MAX_ACCOUNT_NUMBER = 1010;
+    // 当前登录的SIP账号信息
+    private String currentUsername = null;
+    private String currentPassword = null;
+    
+    // 废弃硬编码账号范围，改用自定义账号
+    // private static final int MIN_ACCOUNT_NUMBER = 1001;
+    // private static final int MAX_ACCOUNT_NUMBER = 1010;
     private static final String DEFAULT_PASSWORD = "1234";
     
     /**
@@ -107,6 +113,13 @@ public class CallManager implements
         this.linphoneManager.setLinphoneManagerListener(this);
         this.webRTCHelper.setListener(this);
         this.signalingService.setListener(this);
+        
+        // 尝试从Linphone获取当前登录账号
+        if (linphoneManager.getUsername() != null && !linphoneManager.getUsername().isEmpty()) {
+            this.currentUsername = linphoneManager.getUsername();
+            this.currentPassword = DEFAULT_PASSWORD; // 假设使用默认密码，因为无法获取已保存的密码
+            Log.d(TAG, "从Linphone恢复用户登录身份: " + this.currentUsername);
+        }
     }
     
     /**
@@ -128,11 +141,17 @@ public class CallManager implements
     
     /**
      * 获取可用的SIP账号列表
+     * 
+     * 注意：此方法已弃用硬编码账号列表，
+     * 现在使用外部传入的实际用户账号
      */
     public List<String> getAvailableSipAccounts() {
         List<String> accounts = new ArrayList<>();
-        for (int i = MIN_ACCOUNT_NUMBER; i <= MAX_ACCOUNT_NUMBER; i++) {
-            accounts.add(String.valueOf(i));
+        // 添加当前登录账号
+        if (currentUsername != null && !currentUsername.isEmpty()) {
+            accounts.add(currentUsername);
+        } else {
+            accounts.add("请先登录");
         }
         return accounts;
     }
@@ -141,23 +160,24 @@ public class CallManager implements
      * 获取当前使用的SIP账号
      */
     public String getCurrentSipAccount() {
-        int accountNumber = MIN_ACCOUNT_NUMBER + currentAccountIndex;
-        if (accountNumber > MAX_ACCOUNT_NUMBER) {
-            accountNumber = MIN_ACCOUNT_NUMBER;
+        // 返回当前登录的账号
+        if (currentUsername != null && !currentUsername.isEmpty()) {
+            return currentUsername;
         }
-        return String.valueOf(accountNumber);
+        
+        // 如果未登录，返回提示
+        return "未登录";
     }
     
     /**
      * 设置当前使用的SIP账号索引
+     * 
+     * 注意：此方法已弃用，现在不再使用账号索引
      */
+    @Deprecated
     public void setCurrentAccountIndex(int index) {
-        if (index >= 0 && index < (MAX_ACCOUNT_NUMBER - MIN_ACCOUNT_NUMBER + 1)) {
-            this.currentAccountIndex = index;
-            Log.d(TAG, "当前SIP账号设置为: " + getCurrentSipAccount());
-        } else {
-            Log.e(TAG, "无效的账号索引: " + index);
-        }
+        Log.d(TAG, "账号索引切换功能已弃用");
+        // 不再使用账号索引，方法保留是为了兼容性
     }
     
     /**
@@ -165,6 +185,10 @@ public class CallManager implements
      */
     public boolean initializeSIP(String username, String domain, String password) {
         Log.d(TAG, "初始化SIP服务 - 用户名: " + username + ", 域名: " + domain);
+        
+        // 保存当前账号信息
+        this.currentUsername = username;
+        this.currentPassword = password;
         
         // 使用Linphone登录FreeSwitch服务器
         linphoneManager.login(username, password, domain,
@@ -215,52 +239,75 @@ public class CallManager implements
     }
     
     /**
-     * 使用指定的FreeSwitch账号初始化SIP服务
+     * 使用指定的账号初始化SIP服务
+     * 
+     * 注意：此方法已更新为使用任意有效账号，不再限制为1001-1010范围
      */
     public boolean initializeSipWithAccount(String accountNumber) {
-        if (!isValidAccount(accountNumber)) {
-            Log.e(TAG, "无效的账号: " + accountNumber);
+        if (accountNumber == null || accountNumber.trim().isEmpty()) {
+            Log.e(TAG, "无效的账号: 账号不能为空");
             return false;
         }
         
         String username = accountNumber;
         String password = DEFAULT_PASSWORD;
-        Log.d(TAG, "使用FreeSwitch账号初始化SIP服务 - 用户名: " + username + ", 服务器地址: " + sipServerAddress);
+        Log.d(TAG, "使用SIP账号初始化SIP服务 - 用户名: " + username + ", 服务器地址: " + sipServerAddress);
         
         return initializeSIP(username, sipServerDomain, password);
     }
     
     /**
      * 检查账号是否有效
+     * 
+     * 注意：此方法已更新，现在只检查是否为有效的SIP用户名格式
      */
     private boolean isValidAccount(String accountNumber) {
-        try {
-            int account = Integer.parseInt(accountNumber);
-            return account >= MIN_ACCOUNT_NUMBER && account <= MAX_ACCOUNT_NUMBER;
-        } catch (NumberFormatException e) {
+        if (accountNumber == null || accountNumber.trim().isEmpty()) {
+            return false;
+        }
+        
+        // 检查是否包含非法SIP用户名字符
+        if (accountNumber.contains(" ") || 
+            accountNumber.contains("@") ||
+            accountNumber.contains(":")) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * 使用当前账号初始化SIP服务
+     * 
+     * 注意：此方法已更新为使用当前保存的用户名，不再使用默认硬编码账号
+     */
+    public boolean initializeDefaultSIP() {
+        // 使用已登录的账号
+        if (currentUsername != null && !currentUsername.isEmpty()) {
+            String password = currentPassword != null ? currentPassword : DEFAULT_PASSWORD;
+            Log.d(TAG, "使用当前SIP账号初始化SIP服务 - 用户名: " + currentUsername + ", 服务器地址: " + sipServerAddress);
+            return initializeSIP(currentUsername, sipServerDomain, password);
+        } else {
+            // 如果没有当前账号，提示用户
+            Log.e(TAG, "没有登录账号，无法初始化SIP服务");
+            if (listener != null) {
+                mainHandler.post(() -> listener.onError("请先登录SIP账号"));
+            }
             return false;
         }
     }
     
     /**
-     * 使用默认测试账号初始化SIP服务
-     */
-    public boolean initializeDefaultSIP() {
-        String username = getCurrentSipAccount();
-        String password = DEFAULT_PASSWORD;
-        Log.d(TAG, "使用FreeSwitch账号初始化SIP服务 - 用户名: " + username + ", 服务器地址: " + sipServerAddress);
-        
-        return initializeSIP(username, sipServerDomain, password);
-    }
-    
-    /**
      * 切换到下一个SIP账号
+     * 
+     * 注意：此方法已弃用，因为不再使用硬编码账号列表
+     * 现在只返回当前登录账号
      */
+    @Deprecated
     public String switchToNextAccount() {
-        currentAccountIndex = (currentAccountIndex + 1) % (MAX_ACCOUNT_NUMBER - MIN_ACCOUNT_NUMBER + 1);
-        String newAccount = getCurrentSipAccount();
-        Log.d(TAG, "切换到下一个SIP账号: " + newAccount);
-        return newAccount;
+        // 不再切换账号，只返回当前账号
+        Log.d(TAG, "账号切换功能已弃用，继续使用当前账号: " + getCurrentSipAccount());
+        return getCurrentSipAccount();
     }
     
     /**
@@ -353,19 +400,26 @@ public class CallManager implements
     }
     
     /**
-     * 获取所有可用账号及其状态
+     * 获取当前账号的信息
+     * 
+     * 注意：此方法已更新，不再显示1001-1010账号范围
      */
     public String getAllAccountsInfo() {
         StringBuilder info = new StringBuilder();
-        info.append("FreeSWITCH可用账号(").append(MIN_ACCOUNT_NUMBER).append("-").append(MAX_ACCOUNT_NUMBER).append("):\n");
+        info.append("当前SIP账号信息:\n");
         
-        for (int i = MIN_ACCOUNT_NUMBER; i <= MAX_ACCOUNT_NUMBER; i++) {
-            info.append(i).append(" - ").append("密码: ").append(DEFAULT_PASSWORD);
-            if (String.valueOf(i).equals(getCurrentSipAccount())) {
-                info.append(" [当前账号]");
-            }
-            info.append("\n");
+        // 显示当前账号
+        if (currentUsername != null && !currentUsername.isEmpty()) {
+            info.append("用户名: ").append(currentUsername).append("\n");
+            info.append("密码: ").append(currentPassword != null ? "******" : "未设置").append("\n");
+            info.append("服务器: ").append(sipServerDomain).append(":").append(sipServerPort).append("\n");
+            info.append("传输协议: ").append(sipTransport).append("\n");
+        } else {
+            info.append("未登录SIP账号\n");
         }
+        
+        // 增加使用说明
+        info.append("\n提示: 请使用自定义账号登录，不再使用硬编码的1001-1010账号");
         
         return info.toString();
     }
@@ -405,17 +459,68 @@ public class CallManager implements
             return;
         }
         
+        // 接听前确认使用正确身份
+        ensureCorrectLoginIdentity();
+        
+        // 保存当前账号信息，以便在接听后恢复
+        final String savedUsername = currentUsername;
+        final String savedPassword = currentPassword;
+        
+        // 添加更详细的账号信息日志
+        Log.d(TAG, "接听前记录账号信息:");
+        Log.d(TAG, "- CallManager当前用户名: " + (currentUsername != null ? currentUsername : "未设置"));
+        Log.d(TAG, "- Linphone当前用户名: " + (linphoneManager.getUsername() != null ? 
+                  linphoneManager.getUsername() : "未设置"));
+        
         if (callType == CALL_TYPE_AUDIO) {
-            // 接听SIP音频通话
+            // 接听SIP通话
             linphoneManager.answerCall();
-        } else {
-            // 接听视频通话
-            // 首先创建PeerConnection
-            webRTCHelper.createPeerConnection();
             
-            // 创建应答
+            // 延迟一小段时间后再次确认身份，防止接听过程中身份变化
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                Log.d(TAG, "接听后检查身份是否被改变...");
+                
+                // 检查当前身份
+                String linphoneUser = linphoneManager.getUsername();
+                
+                if (linphoneUser == null || !linphoneUser.equals(savedUsername)) {
+                    Log.w(TAG, "接听后身份被改变! 当前: " + linphoneUser + ", 应为: " + savedUsername);
+                    
+                    // 恢复保存的身份
+                    currentUsername = savedUsername;
+                    currentPassword = savedPassword;
+                    
+                    // 强制恢复身份
+                    ensureCorrectLoginIdentity();
+                    
+                    // 通知LinphoneManager也恢复身份
+                    linphoneManager.ensureCorrectIdentity();
+                } else {
+                    Log.d(TAG, "接听后身份正确: " + linphoneUser);
+                }
+                
+                // 二次检查确保接听成功，防止自动拒接
+                if (linphoneManager.getCallState() != LinphoneManager.CALL_STATE_CONNECTED) {
+                    Log.w(TAG, "通话可能未正常连接，检查状态: " + linphoneManager.getCallState());
+                    // 尝试再次确认身份
+                    ensureCorrectLoginIdentity();
+                }
+            }, 800);
+            
+            // 再次延迟检查，确保连接建立后身份仍然正确
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                Log.d(TAG, "连接建立后再次检查身份...");
+                ensureCorrectLoginIdentity();
+                linphoneManager.ensureCorrectIdentity();
+            }, 3000); // 3秒后再次检查
+        } else {
+            // 接听WebRTC视频通话
+            // 创建连接并应答
+            webRTCHelper.createPeerConnection();
             webRTCHelper.createAnswer();
         }
+        
+        updateCallState(CALL_STATE_CONNECTED);
     }
     
     /**
@@ -448,17 +553,87 @@ public class CallManager implements
             return;
         }
         
+        Log.d(TAG, "开始结束通话，当前状态：" + callState);
+        
+        // 先更新状态为ENDED，防止重复调用
+        updateCallState(CALL_STATE_ENDED);
+        
         if (callType == CALL_TYPE_AUDIO || 
             (callType == CALL_TYPE_VIDEO && linphoneManager.getCallState() != CALL_STATE_IDLE)) {
             // 结束SIP通话
             linphoneManager.endCall();
+            
+            // 延迟一小段时间后进行身份确认，防止通话结束后身份丢失
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                ensureCorrectLoginIdentity();
+                
+                // 确保通话状态被重置为IDLE
+                if (callState != CALL_STATE_IDLE) {
+                    Log.d(TAG, "强制重置通话状态为IDLE");
+                    updateCallState(CALL_STATE_IDLE);
+                }
+                
+                // 确保Linphone内部状态也被重置
+                if (linphoneManager.getCallState() != CALL_STATE_IDLE) {
+                    Log.d(TAG, "Linphone通话状态未重置，尝试强制重置");
+                    linphoneManager.forceResetCallState();
+                }
+            }, 500);
         } else {
             // 结束WebRTC视频通话
             webRTCHelper.close();
             signalingService.sendLeave(remoteUserId);
+            
+            // 确保状态被重置
+            updateCallState(CALL_STATE_IDLE);
         }
         
-        updateCallState(CALL_STATE_IDLE);
+        // 最后确保状态被重置为IDLE
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            updateCallState(CALL_STATE_IDLE);
+            Log.d(TAG, "通话结束后最终状态检查和重置完成");
+        }, 1000);
+    }
+    
+    /**
+     * 确保当前使用的是正确的登录身份，不使用默认账号
+     */
+    private void ensureCorrectLoginIdentity() {
+        if (currentUsername != null && !currentUsername.isEmpty()) {
+            // 先确认当前Linphone使用的身份
+            String linphoneUser = linphoneManager.getUsername();
+            
+            // 如果不匹配或为null，则重新应用登录身份
+            if (linphoneUser == null || !linphoneUser.equals(currentUsername) || 
+                 "1001".equals(linphoneUser)) { // 特别检查是否错误使用了1001账号
+                
+                Log.w(TAG, "检测到账号身份不匹配! LinphoneID=" + linphoneUser + 
+                           ", 当前登录ID=" + currentUsername + ", 尝试恢复身份");
+                
+                // 重新确认身份
+                linphoneManager.ensureCorrectIdentity();
+                
+                // 短暂延迟确保设置生效
+                try { 
+                    Log.d(TAG, "短暂等待身份设置生效...");
+                    Thread.sleep(100);
+                } catch (Exception e) {
+                    Log.w(TAG, "延迟等待被打断: " + e.getMessage());
+                }
+                
+                // 再次检查以确认修复是否成功
+                String newLinphoneUser = linphoneManager.getUsername();
+                Log.d(TAG, "身份重置后检查: 旧=" + linphoneUser + ", 新=" + newLinphoneUser + 
+                       ", 目标=" + currentUsername);
+                
+                // 记录确认结果
+                Log.d(TAG, "身份确认完成，当前使用的SIP账号为: " + linphoneManager.getUsername());
+            } else {
+                Log.d(TAG, "当前SIP账号身份正确: " + currentUsername);
+            }
+        } else {
+            Log.w(TAG, "未设置当前用户名，无法确认身份");
+        }
     }
     
     /**
@@ -553,6 +728,50 @@ public class CallManager implements
     @Override
     public void onCallStateChanged(int state) {
         Log.d(TAG, "SIP通话状态变化: " + state);
+        
+        // 在通话状态变化时确认身份，特别是在连接和断开时
+        if (state == LinphoneManager.CALL_STATE_CONNECTED) {
+            Log.d(TAG, "通话已连接，确认身份...");
+            ensureCorrectLoginIdentity();
+            
+            // 确保在通话连接后SIP账号仍然注册
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                Log.d(TAG, "通话连接后检查SIP注册状态...");
+                if (linphoneManager != null && !linphoneManager.isRegistered()) {
+                    Log.w(TAG, "通话连接后发现SIP未注册，尝试重新注册");
+                    // 保存当前身份
+                    final String savedUsername = currentUsername;
+                    final String savedPassword = currentPassword;
+                    
+                    // 重新登录
+                    if (savedUsername != null && !savedUsername.isEmpty()) {
+                        linphoneManager.login(savedUsername, savedPassword, sipServerDomain, 
+                                String.valueOf(sipServerPort), sipTransport, null);
+                    }
+                }
+            }, 2000); // 2秒后检查
+        } else if (state == LinphoneManager.CALL_STATE_ENDED) {
+            Log.d(TAG, "通话已结束，确认身份...");
+            ensureCorrectLoginIdentity();
+            
+            // 通话结束后确保SIP账号仍然注册
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                Log.d(TAG, "通话结束后检查SIP注册状态...");
+                if (linphoneManager != null && !linphoneManager.isRegistered()) {
+                    Log.w(TAG, "通话结束后发现SIP未注册，尝试重新注册");
+                    // 保存当前身份
+                    final String savedUsername = currentUsername;
+                    final String savedPassword = currentPassword;
+                    
+                    // 重新登录
+                    if (savedUsername != null && !savedUsername.isEmpty()) {
+                        linphoneManager.login(savedUsername, savedPassword, sipServerDomain, 
+                                String.valueOf(sipServerPort), sipTransport, null);
+                    }
+                }
+            }, 1000); // 1秒后检查
+        }
+        
         updateCallState(state);
     }
     
@@ -696,5 +915,37 @@ public class CallManager implements
         void onIncomingCall(String callerId, int callType);
         void onMessage(String message);
         void onError(String errorMessage);
+    }
+    
+    /**
+     * 设置当前使用的SIP账号
+     * 
+     * @param username SIP用户名
+     * @param password SIP密码
+     * @return 是否设置成功
+     */
+    public boolean setCustomSipAccount(String username, String password) {
+        if (username == null || username.trim().isEmpty()) {
+            Log.e(TAG, "无效的SIP用户名");
+            return false;
+        }
+        
+        // 保存账号信息
+        this.currentUsername = username;
+        this.currentPassword = password != null && !password.isEmpty() ? password : DEFAULT_PASSWORD;
+        
+        Log.d(TAG, "设置当前SIP账号: " + username);
+        
+        // 如果已经登录了其他账号，尝试先注销
+        if (linphoneManager.isRegistered() && 
+            !username.equals(linphoneManager.getUsername())) {
+            
+            linphoneManager.logout();
+            
+            // 使用新账号登录
+            return initializeSIP(username, sipServerDomain, this.currentPassword);
+        }
+        
+        return true;
     }
 }

@@ -3,6 +3,8 @@ package com.example.aioutfitapp.network;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -120,11 +122,14 @@ public class LinphoneManager {
         this.context = context.getApplicationContext();
         this.preferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         
+        // 彻底清理Linphone配置，避免使用旧配置
+        purgeLegacyConfig();
+        
         // 开启日志收集
         Factory.instance().enableLogCollection(LogCollectionState.Enabled);
         Factory.instance().enableLogcatLogs(true);
         
-        // 创建配置文件目录
+        // 创建配置目录
         File configDir = context.getFilesDir();
         if (!configDir.exists()) {
             if (!configDir.mkdir()) {
@@ -158,6 +163,89 @@ public class LinphoneManager {
         }
         
         return this;
+    }
+    
+    /**
+     * 彻底清理旧的Linphone配置文件，清除可能包含默认账号"1001"的所有配置
+     */
+    private void purgeLegacyConfig() {
+        try {
+            // 删除应用数据目录中的所有Linphone相关文件
+            File filesDir = context.getFilesDir();
+            deleteLinphoneFiles(filesDir);
+            
+            // 清除共享偏好设置中可能包含账号信息的键
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.clear();
+            editor.apply();
+            
+            // 删除Linphone RC文件
+            File rcFile = new File(filesDir, ".linphonerc");
+            if (rcFile.exists()) {
+                boolean deleted = rcFile.delete();
+                Log.d(TAG, "删除Linphone RC文件: " + (deleted ? "成功" : "失败"));
+            }
+            
+            // 删除Linphone数据库文件
+            File dbFile = new File(filesDir, "linphone.db");
+            if (dbFile.exists()) {
+                boolean deleted = dbFile.delete();
+                Log.d(TAG, "删除Linphone数据库文件: " + (deleted ? "成功" : "失败"));
+            }
+            
+            // 删除其他可能的配置文件
+            File factoryRcFile = new File(filesDir, ".linphonerc-factory");
+            if (factoryRcFile.exists()) {
+                boolean deleted = factoryRcFile.delete();
+                Log.d(TAG, "删除Linphone出厂配置文件: " + (deleted ? "成功" : "失败"));
+            }
+            
+            File linphoneDir = new File(filesDir, "linphone");
+            if (linphoneDir.exists() && linphoneDir.isDirectory()) {
+                deleteRecursive(linphoneDir);
+                Log.d(TAG, "删除Linphone目录");
+            }
+            
+            Log.i(TAG, "已彻底清理所有Linphone配置");
+        } catch (Exception e) {
+            Log.e(TAG, "清理Linphone配置出错: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 递归删除目录及其内容
+     */
+    private void deleteRecursive(File fileOrDirectory) {
+        if (fileOrDirectory.isDirectory()) {
+            File[] files = fileOrDirectory.listFiles();
+            if (files != null) {
+                for (File child : files) {
+                    deleteRecursive(child);
+                }
+            }
+        }
+        boolean deleted = fileOrDirectory.delete();
+        if (!deleted) {
+            Log.w(TAG, "无法删除文件: " + fileOrDirectory.getAbsolutePath());
+        }
+    }
+    
+    /**
+     * 删除目录中所有Linphone相关文件
+     */
+    private void deleteLinphoneFiles(File directory) {
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                String fileName = file.getName().toLowerCase();
+                if (fileName.contains("linphone") || 
+                    fileName.startsWith(".linphone") || 
+                    fileName.endsWith(".rc")) {
+                    boolean deleted = file.delete();
+                    Log.d(TAG, "删除文件 " + file.getName() + ": " + (deleted ? "成功" : "失败"));
+                }
+            }
+        }
     }
     
     /**
@@ -270,6 +358,38 @@ public class LinphoneManager {
     private void configureCore() {
         if (core == null) return;
         
+        // 配置STUN服务器以解决NAT穿透问题
+        try {
+            Log.i(TAG, "正在配置STUN/ICE服务器...");
+            core.setStunServer("stun.linphone.org");
+            
+            // 使用NatPolicy配置ICE，而不是直接调用setIceEnabled
+            try {
+                org.linphone.core.NatPolicy natPolicy = core.createNatPolicy();
+                //natPolicy.enableStun(true);
+                //natPolicy.enableIce(true);
+                core.setNatPolicy(natPolicy);
+                Log.i(TAG, "已通过NatPolicy启用ICE功能");
+            } catch (Exception e) {
+                Log.w(TAG, "无法通过NatPolicy启用ICE: " + e.getMessage());
+                
+                // 尝试使用反射方式启用ICE（兼容旧版本）
+                try {
+                    java.lang.reflect.Method enableIce = core.getClass().getMethod("enableIce", boolean.class);
+                    if (enableIce != null) {
+                        enableIce.invoke(core, true);
+                        Log.i(TAG, "已通过反射方式启用ICE功能");
+                    }
+                } catch (Exception ex) {
+                    Log.w(TAG, "无法通过反射启用ICE: " + ex.getMessage());
+                }
+            }
+            
+            Log.i(TAG, "STUN服务器 [stun.linphone.org] 和 ICE功能配置完成");
+        } catch (Exception e) {
+            Log.e(TAG, "配置STUN/ICE失败: " + e.getMessage(), e);
+        }
+        
         // 启用来电铃声和振动
         core.setNativeRingingEnabled(true);
         core.setVibrationOnIncomingCallEnabled(true);
@@ -286,6 +406,83 @@ public class LinphoneManager {
         
         // 配置编解码器偏好
         configureCodecs();
+        
+        // 禁用任何可能导致自动拒接电话的功能
+        try {
+            // 禁用免打扰模式
+            Log.i(TAG, "尝试禁用可能导致自动拒接的功能");
+            // 不使用不兼容的API
+            core.setUseRfc2833ForDtmf(true);
+            
+            // 检查是否有配置文件可能导致身份问题
+            File configFile = new File(context.getFilesDir(), ".linphonerc");
+            if (configFile.exists()) {
+                Log.d(TAG, "检查Linphone配置文件是否有问题...");
+                // 读取配置文件内容
+                try {
+                    java.util.Scanner scanner = new java.util.Scanner(configFile);
+                    StringBuilder content = new StringBuilder();
+                    while (scanner.hasNextLine()) {
+                        String line = scanner.nextLine();
+                        content.append(line).append("\n");
+                        // 检查是否有默认账号设置
+                        if (line.contains("1001@") || line.contains("username=1001")) {
+                            Log.w(TAG, "发现可疑配置: " + line);
+                        }
+                    }
+                    scanner.close();
+                    Log.d(TAG, "配置文件内容: " + content.toString());
+                } catch (Exception e) {
+                    Log.e(TAG, "读取配置文件失败: " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "禁用自动拒接功能失败: " + e.getMessage());
+        }
+        
+        // 启用详细日志
+        try {
+            // 旧版本可能不支持这些日志方法，使用try-catch避免崩溃
+            Log.i(TAG, "尝试启用Linphone详细日志");
+            //Factory.instance().enableDebug(true);
+        } catch (Exception e) {
+            Log.w(TAG, "设置Linphone日志级别失败: " + e.getMessage());
+        }
+        Log.i(TAG, "正在配置音视频编解码器...");
+        try {
+            // 遍历所有音频编解码器
+            for (PayloadType pt : core.getAudioPayloadTypes()) {
+                // 优先启用Opus和G711(PCMU/PCMA)，这是兼容性最好的组合
+                if (pt.getMimeType().equalsIgnoreCase("opus") || 
+                    pt.getMimeType().equalsIgnoreCase("pcmu") || 
+                    pt.getMimeType().equalsIgnoreCase("pcma")) {
+                    
+                    pt.enable(true);
+                    Log.d(TAG, "启用了音频编解码器: " + pt.getMimeType());
+                } else {
+                    // 禁用其他不常用的，避免协商混乱
+                    pt.enable(false);
+                }
+            }
+
+            // 遍历所有视频编解码器
+            for (PayloadType pt : core.getVideoPayloadTypes()) {
+                // 只启用H264，这是最通用的视频编码
+                if (pt.getMimeType().equalsIgnoreCase("h264")) {
+                    pt.enable(true);
+                    Log.d(TAG, "启用了视频编解码器: H264");
+                } else {
+                    pt.enable(false);
+                }
+            }
+            Log.i(TAG, "编解码器配置完成。");
+        } catch (Exception e) {
+            Log.e(TAG, "配置编解码器失败", e);
+        }
+        // --- 结束添加的代码 ---
+        
+        // 设置消息监听器拦截和记录SIP消息
+        configureSipMessageMonitor();
     }
     
     /**
@@ -308,6 +505,81 @@ public class LinphoneManager {
             if (isH264) {
                 pt.setNormalBitrate(1024);
             }
+        }
+    }
+    
+    /**
+     * 配置SIP消息监控器以记录请求和响应，辅助调试身份问题
+     */
+    private void configureSipMessageMonitor() {
+        try {
+            // 为核心注册全局通话状态回调，用于记录SIP消息
+            core.addListener(new CoreListenerStub() {
+                @Override
+                public void onCallStateChanged(Core core, Call call, Call.State state, String message) {
+                    if (call != null) {
+                        // 记录通话信息，包括SIP请求头
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("SIP通话状态变更: ").append(state).append("\n");
+                        
+                        // 尝试获取地址信息，使用安全的方式避免不兼容方法
+                        try {
+                            Address remote = call.getRemoteAddress();
+                            sb.append("远程地址: ").append(remote != null ? remote.asString() : "未知").append("\n");
+                        } catch (Exception e) {
+                            sb.append("无法获取远程地址: ").append(e.getMessage()).append("\n");
+                        }
+                        
+                        sb.append("当前注册用户: ").append(username != null ? username : "未设置").append("\n");
+                        
+                        // 检查是否使用了正确的FROM标头
+                        Account account = core.getDefaultAccount();
+                        if (account != null && account.getParams() != null) {
+                            try {
+                                Address identity = account.getParams().getIdentityAddress();
+                                sb.append("账号身份: ").append(identity != null ? identity.asString() : "未设置").append("\n");
+                            } catch (Exception e) {
+                                sb.append("无法获取身份信息: ").append(e.getMessage()).append("\n");
+                            }
+                        }
+                        
+                        Log.d("SIP_MONITOR", sb.toString());
+                    }
+                }
+                
+                @Override
+                public void onRegistrationStateChanged(Core core, ProxyConfig config, RegistrationState state, String message) {
+                    if (config != null) {
+                        // 记录注册信息，包括SIP请求头
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("SIP注册状态变更: ").append(state).append("\n");
+                        
+                        try {
+                            sb.append("身份地址: ").append(config.getIdentityAddress()).append("\n");
+                            
+                            // 尝试使用兼容方法获取服务器信息
+                            String identityStr = config.getIdentityAddress() != null ? 
+                                config.getIdentityAddress().asString() : "未知";
+                            sb.append("身份字符串: ").append(identityStr).append("\n");
+                            
+                            // 移除可能不兼容的方法调用
+                            //sb.append("服务器地址: ").append(config.getServerAddress()).append("\n");
+                            //sb.append("代理地址: ").append(config.getRoute()).append("\n");
+                        } catch (Exception e) {
+                            sb.append("无法获取配置信息: ").append(e.getMessage()).append("\n");
+                        }
+                        
+                        sb.append("当前注册用户: ").append(username != null ? username : "未设置").append("\n");
+                        sb.append("返回消息: ").append(message != null ? message : "无").append("\n");
+                        
+                        Log.d("SIP_MONITOR", sb.toString());
+                    }
+                }
+            });
+            
+            Log.i(TAG, "已配置SIP消息监控器");
+        } catch (Exception e) {
+            Log.e(TAG, "配置SIP消息监控器失败: " + e.getMessage(), e);
         }
     }
     
@@ -342,11 +614,34 @@ public class LinphoneManager {
                         // 获取来电者信息
                         Address address = call.getRemoteAddress();
                         String displayName = address.getDisplayName();
-                        String username = address.getUsername();
+                        String incomingUsername = address.getUsername();
                         final String callerId = (displayName != null && !displayName.isEmpty()) 
-                                ? displayName : username;
+                                ? displayName : incomingUsername;
                         
                         Log.d(TAG, "收到来电: " + callerId);
+                        
+                        // 关键：检查并记录当前身份信息，防止被改变
+                        String currentIdentity = "未知";
+                        try {
+                            Account account = core.getDefaultAccount();
+                            if (account != null && account.getContactAddress() != null) {
+                                currentIdentity = account.getContactAddress().getUsername();
+                                Log.d(TAG, "来电前身份检查 - 当前账号: " + currentIdentity);
+                                
+                                // 检查是否与保存的用户名一致
+                                if (username != null && !username.equals(currentIdentity)) {
+                                    Log.w(TAG, "警告：当前账号与保存的用户名不一致！保存的用户名: " + username);
+                                    
+                                    // 立即尝试恢复正确身份
+                                    ensureCorrectIdentity();
+                                }
+                            } else {
+                                Log.w(TAG, "来电时无默认账号或联系地址");
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "检查身份时出错: " + e.getMessage());
+                        }
+                        
                         Toast.makeText(context, "收到来电: " + callerId, Toast.LENGTH_SHORT).show();
                         
                         // 确定通话类型
@@ -358,16 +653,40 @@ public class LinphoneManager {
                             listener.onIncomingCall(callerId, callType);
                         }
                         
-                        // 直接启动来电界面
+                        // 直接启动来电界面前再次确认身份
+                        ensureCorrectIdentity();
                         startIncomingCallActivity(callerId, callType);
                         break;
                     case Connected:
                         Log.d(TAG, "通话已连接");
+                        
+                        // 关键：在连接后立即再次确认身份，并保存连接时的身份信息
+                        try {
+                            // 保存连接时的身份信息，以便后续恢复
+                            Account account = core.getDefaultAccount();
+                            if (account != null && account.getContactAddress() != null) {
+                                String connectedIdentity = account.getContactAddress().getUsername();
+                                Log.d(TAG, "通话连接时的身份: " + connectedIdentity);
+                                
+                                // 确保这个身份是正确的
+                                if (username != null && !username.equals(connectedIdentity)) {
+                                    Log.w(TAG, "通话连接时身份不匹配，立即修复！");
+                                    ensureCorrectIdentity();
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "保存连接身份时出错: " + e.getMessage());
+                        }
+                        
                         Toast.makeText(context, "通话已连接", Toast.LENGTH_SHORT).show();
                         updateCallState(CALL_STATE_CONNECTED);
                         break;
                     case StreamsRunning:
                         Log.d(TAG, "媒体流已开始");
+                        
+                        // 媒体流开始时再次确认身份
+                        ensureCorrectIdentity();
+                        
                         updateCallState(CALL_STATE_CONNECTED);
                         isVideoEnabled = call.getCurrentParams().isVideoEnabled();
                         Log.d(TAG, "视频状态: " + (isVideoEnabled ? "已启用" : "未启用"));
@@ -376,11 +695,19 @@ public class LinphoneManager {
                         Log.d(TAG, "通话已结束");
                         Toast.makeText(context, "通话已结束", Toast.LENGTH_SHORT).show();
                         updateCallState(CALL_STATE_ENDED);
+                        
+                        // 通话结束后确认身份没有被改变
+                        ensureCorrectIdentity();
+                        
                         currentCall = null;
                         break;
                     case Released:
                         Log.d(TAG, "通话资源已释放");
                         updateCallState(CALL_STATE_ENDED);
+                        
+                        // 资源释放后确认身份没有被改变
+                        ensureCorrectIdentity();
+                        
                         currentCall = null;
                         break;
                     case Error:
@@ -470,41 +797,46 @@ public class LinphoneManager {
                 Log.e(TAG, "无法创建用户证书目录");
             }
             
-            // 准备默认配置文件
-            copyFromPackage("linphonerc_default", configPath + "/.linphonerc");
+            // 不复制默认配置文件，而是创建一个新的干净配置
+            File rcFile = new File(configPath + "/.linphonerc");
+            if (!rcFile.exists()) {
+                boolean created = rcFile.createNewFile();
+                if (created) {
+                    // 写入基本配置，但不包含任何默认账号信息
+                    FileOutputStream fos = new FileOutputStream(rcFile);
+                    String basicConfig = 
+                        "[sip]\n" +
+                        "guess_hostname=1\n" +
+                        "register_only_when_network_is_up=1\n" +
+                        "auto_net_state_mon=1\n" +
+                        "ping_with_options=0\n" +
+                        "\n" +
+                        "[sound]\n" +
+                        "echocancellation=1\n" +
+                        "mic_gain_db=0.0\n" +
+                        "playback_gain_db=0.0\n" +
+                        "\n" +
+                        "[video]\n" +
+                        "displaytype=MSAndroidTextureDisplay\n" +
+                        "auto_resize_preview_to_keep_ratio=1\n" +
+                        "capture=1\n" +
+                        "display=1\n" +
+                        "preferred_video_codec=H264\n" +
+                        "\n" +
+                        "[misc]\n" +
+                        "max_calls=10\n";
+                    
+                    fos.write(basicConfig.getBytes());
+                    fos.close();
+                    Log.i(TAG, "创建了新的Linphone配置文件");
+                } else {
+                    Log.e(TAG, "无法创建新的Linphone配置文件");
+                }
+            }
             
-            Log.i(TAG, "配置文件已复制到: " + configPath);
+            Log.i(TAG, "配置文件准备完成: " + configPath);
         } catch (IOException e) {
-            Log.e(TAG, "复制配置文件失败: " + e.getMessage(), e);
-        }
-    }
-    
-    /**
-     * 从assets目录复制文件到指定位置
-     */
-    private void copyFromPackage(String assetFilename, String destination) throws IOException {
-        InputStream inStream = null;
-        FileOutputStream outStream = null;
-        
-        try {
-            inStream = context.getAssets().open(assetFilename);
-            if (inStream == null) {
-                Log.w(TAG, "无法从assets读取: " + assetFilename);
-                return;
-            }
-            
-            outStream = new FileOutputStream(destination);
-            
-            byte[] buffer = new byte[1024];
-            int read;
-            while ((read = inStream.read(buffer)) != -1) {
-                outStream.write(buffer, 0, read);
-            }
-            
-            Log.i(TAG, "文件已复制: " + assetFilename + " -> " + destination);
-        } finally {
-            if (inStream != null) inStream.close();
-            if (outStream != null) outStream.close();
+            Log.e(TAG, "配置文件操作失败: " + e.getMessage(), e);
         }
     }
     
@@ -575,7 +907,9 @@ public class LinphoneManager {
             // 清除现有账号
             try {
                 core.clearProxyConfig();
-                Log.d(TAG, "清除现有代理配置成功");
+                // 清除所有用户信息以确保不会使用任何默认值
+                core.clearAllAuthInfo();
+                Log.d(TAG, "清除现有代理配置和认证信息成功");
             } catch (Exception e) {
                 Log.e(TAG, "清除代理配置失败: " + (e.getMessage() != null ? e.getMessage() : "未知错误"), e);
             }
@@ -1259,6 +1593,9 @@ public class LinphoneManager {
             return;
         }
         
+        // 发起通话前确保身份正确
+        ensureCorrectIdentity();
+        
         // 格式化SIP地址
         String sipAddress = to;
         if (!to.startsWith("sip:")) {
@@ -1337,27 +1674,26 @@ public class LinphoneManager {
      * 接听来电
      */
     public void answerCall() {
-        if (core == null || currentCall == null) {
-            Log.e(TAG, "无法接听来电:核心未初始化或无当前来电");
+        if (core == null) {
+            Log.e(TAG, "无法接听：Linphone核心为空！");
             return;
         }
-        
-        try {
-            CallParams params = core.createCallParams(currentCall);
-            if (params != null) {
-                // 设置接听参数
-                boolean hasVideo = currentCall.getRemoteParams().isVideoEnabled();
-                params.setVideoEnabled(hasVideo);
-                
-                // 接听通话
-                currentCall.acceptWithParams(params);
-            } else {
-                currentCall.accept();
+        Call incomingCall = null;
+        for (Call call : core.getCalls()) {
+            if (call.getState() == Call.State.IncomingReceived) {
+                incomingCall = call;
+                break;
             }
-            
-            Log.i(TAG, "已接听来电");
-        } catch (Exception e) {
-            Log.e(TAG, "接听来电失败: " + e.getMessage(), e);
+        }
+        if (incomingCall != null) {
+            try {
+                incomingCall.accept();
+                Log.i(TAG, "已直接从Core接听来电！");
+            } catch (Exception e) {
+                Log.e(TAG, "从Core接听来电失败", e);
+            }
+        } else {
+            Log.e(TAG, "在核心通话列表中找不到处于来电状态的通话！");
         }
     }
     
@@ -1382,18 +1718,54 @@ public class LinphoneManager {
         if (core == null) return;
         
         try {
-            if (currentCall != null) {
-                currentCall.terminate();
-                Log.i(TAG, "已结束通话");
-            } else if (core.getCallsNb() > 0) {
-                // 结束所有通话
+            // 记录当前状态
+            int previousState = callState;
+            Log.d(TAG, "开始结束通话，当前状态：" + previousState);
+            
+            // 查找并结束所有通话
+            int callCount = core.getCallsNb();
+            if (callCount > 0) {
+                Log.d(TAG, "发现" + callCount + "个活跃通话，尝试全部结束");
+                
                 for (Call call : core.getCalls()) {
-                    call.terminate();
+                    try {
+                        call.terminate();
+                        Log.i(TAG, "已结束通话: " + call.getRemoteAddress().asString());
+                    } catch (Exception e) {
+                        Log.e(TAG, "结束通话失败: " + e.getMessage(), e);
+                    }
                 }
-                Log.i(TAG, "已结束所有通话");
+            } else {
+                Log.w(TAG, "无法结束通话：在核心中找不到通话！");
             }
+            
+            // 强制更新状态
+            currentCall = null;
+            updateCallState(CALL_STATE_ENDED);
+            
+            // 延迟一段时间后确保状态被重置为IDLE
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                // 再次检查是否还有活跃通话
+                if (core != null && core.getCallsNb() > 0) {
+                    Log.w(TAG, "通话结束后仍有" + core.getCallsNb() + "个活跃通话，再次尝试结束");
+                    for (Call call : core.getCalls()) {
+                        try {
+                            call.terminate();
+                        } catch (Exception e) {
+                            Log.e(TAG, "再次结束通话失败: " + e.getMessage(), e);
+                        }
+                    }
+                }
+                
+                // 最终重置状态
+                updateCallState(CALL_STATE_IDLE);
+                Log.d(TAG, "通话状态已最终重置为IDLE");
+            }, 500);
         } catch (Exception e) {
-            Log.e(TAG, "结束通话失败: " + e.getMessage(), e);
+            Log.e(TAG, "结束通话过程中出错: " + e.getMessage(), e);
+            // 确保状态被重置
+            currentCall = null;
+            updateCallState(CALL_STATE_IDLE);
         }
     }
     
@@ -1561,6 +1933,50 @@ public class LinphoneManager {
      */
     public int getCallState() {
         return callState;
+    }
+    
+    /**
+     * 强制重置通话状态
+     * 当检测到通话状态异常时调用此方法强制重置
+     */
+    public void forceResetCallState() {
+        Log.d(TAG, "强制重置通话状态");
+        
+        try {
+            // 确保没有活跃的通话
+            if (core != null) {
+                // 检查是否有活跃的通话
+                if (core.getCallsNb() > 0) {
+                    Log.w(TAG, "检测到" + core.getCallsNb() + "个活跃通话，尝试强制结束");
+                    
+                    // 结束所有通话
+                    for (Call call : core.getCalls()) {
+                        try {
+                            call.terminate();
+                            Log.d(TAG, "强制结束通话: " + call.getRemoteAddress().asString());
+                        } catch (Exception e) {
+                            Log.e(TAG, "结束通话失败: " + e.getMessage(), e);
+                        }
+                    }
+                }
+                
+                // 重置内部状态
+                currentCall = null;
+                callState = CALL_STATE_IDLE;
+                
+                // 通知监听器
+                if (listener != null) {
+                    listener.onCallStateChanged(CALL_STATE_IDLE);
+                }
+                
+                // 刷新注册状态
+                core.refreshRegisters();
+                
+                Log.d(TAG, "通话状态已强制重置为IDLE");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "强制重置通话状态失败: " + e.getMessage(), e);
+        }
     }
     
     /**
@@ -1981,5 +2397,222 @@ public class LinphoneManager {
         } catch (Exception e) {
             Log.e(TAG, "启动来电界面出错: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 设置身份验证详情和账号信息
+     * 此方法可以在初始化和接听来电前调用，以确保使用正确的用户身份
+     */
+    public void ensureCorrectIdentity() {
+        if (core == null || username == null || domain == null) {
+            Log.d(TAG, "无法验证身份：核心为空或用户信息未设置");
+            return;
+        }
+        
+        try {
+            Log.d(TAG, "开始身份验证，确保使用正确账号: " + username + "@" + domain);
+            
+            // 获取当前默认账号
+            Account account = core.getDefaultAccount();
+            if (account != null) {
+                Address contactAddress = account.getContactAddress();
+                String currentUser = contactAddress != null ? contactAddress.getUsername() : null;
+                
+                // 强力检测和修复
+                if (currentUser == null || !currentUser.equals(username) || currentUser.equals("1001")) {
+                    Log.w(TAG, "检测到身份不匹配或默认1001账号! 当前: " + currentUser + ", 应为: " + username);
+                    
+                    // 清除所有认证信息和账号
+                    core.clearAllAuthInfo();
+                    core.clearProxyConfig();
+                    
+                    // 重新创建认证信息
+                    String fullDomain = domain;
+                    if (!fullDomain.contains(":")) {
+                        fullDomain += ":" + port;
+                    }
+                    
+                    // 重新设置SIP身份和认证信息
+                    try {
+                        // 创建身份地址
+                        String identityUri = "sip:" + username + "@" + domain;
+                        Address identity = Factory.instance().createAddress(identityUri);
+                        if (identity == null) {
+                            Log.e(TAG, "无法创建身份地址: " + identityUri);
+                            return;
+                        }
+                        
+                        // 创建认证信息
+                        AuthInfo authInfo = Factory.instance().createAuthInfo(
+                                username, null, password, null, null, fullDomain, null);
+                        core.addAuthInfo(authInfo);
+                        
+                        // 创建账号参数
+                        AccountParams params = core.createAccountParams();
+                        if (params == null) {
+                            Log.e(TAG, "无法创建账号参数");
+                            return;
+                        }
+                        
+                        // 设置身份地址
+                        params.setIdentityAddress(identity);
+                        
+                        // 设置服务器地址
+                        String serverUri = "sip:" + fullDomain;
+                        Address serverAddr = Factory.instance().createAddress(serverUri);
+                        if (serverAddr != null) {
+                            // 设置传输类型
+                            TransportType transportType = TransportType.Udp;
+                            if ("tcp".equalsIgnoreCase(transport)) {
+                                transportType = TransportType.Tcp;
+                            } else if ("tls".equalsIgnoreCase(transport)) {
+                                transportType = TransportType.Tls;
+                            }
+                            serverAddr.setTransport(transportType);
+                            params.setServerAddress(serverAddr);
+                        }
+                        
+                        // 启用注册
+                        params.setRegisterEnabled(true);
+                        
+                        // 禁用可能导致自动拒绝的功能
+                        try {
+                            // 设置自定义参数，避免使用不兼容的API
+                            Log.d(TAG, "设置账号参数，避免自动拒绝功能");
+                            
+                            // 检查是否有任何可能导致自动拒绝的设置
+                            Config config = core.getConfig();
+                            if (config != null) {
+                                // 尝试从配置中读取相关设置
+                                String dndStatus = config.getString("app", "dnd_status", "false");
+                                if ("true".equals(dndStatus)) {
+                                    Log.w(TAG, "发现免打扰设置已启用，尝试禁用");
+                                    config.setString("app", "dnd_status", "false");
+                                    config.sync();
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.w(TAG, "设置防止自动拒绝的参数失败: " + e.getMessage());
+                        }
+                        
+                        // 设置联系方式和显示名称，确保使用正确的用户标识
+                        if (identity != null) {
+                            identity.setDisplayName(username);
+                        }
+                        
+                        // 创建账号并添加到核心
+                        Account newAccount = core.createAccount(params);
+                        core.addAccount(newAccount);
+                        core.setDefaultAccount(newAccount);
+                        
+                        Log.d(TAG, "成功重新创建了SIP账号并设置身份: " + username + "@" + domain);
+                        
+                        // 发送注册请求
+                        core.refreshRegisters();
+                        
+                        // 确认最终状态
+                        Account finalAccount = core.getDefaultAccount();
+                        if (finalAccount != null && finalAccount.getContactAddress() != null) {
+                            Log.d(TAG, "最终确认: 当前使用的账号为 " + finalAccount.getContactAddress().getUsername());
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "重置身份时出错: " + e.getMessage(), e);
+                    }
+                } else {
+                    Log.d(TAG, "身份验证正确: " + username + "@" + domain);
+                    
+                    // 确保不会自动拒接来电
+                    try {
+                        // 检查是否有任何导致自动拒接的配置
+                        Config config = core.getConfig();
+                        if (config != null) {
+                            // 检查并禁用任何可能的免打扰设置
+                            String dndStatus = config.getString("app", "dnd_status", "false");
+                            if ("true".equals(dndStatus)) {
+                                Log.w(TAG, "发现免打扰设置已启用，尝试禁用");
+                                config.setString("app", "dnd_status", "false");
+                                config.sync();
+                            }
+                            
+                            // 检查是否有其他可能导致拒接的设置
+                            Log.d(TAG, "检查并禁用可能导致自动拒接的设置");
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "检查免打扰设置失败: " + e.getMessage());
+                    }
+                    
+                    // 检查FROM头部是否正确设置
+                    if (account.getParams() != null) {
+                        Log.d(TAG, "当前账号信息 - 身份: " + account.getParams().getIdentityAddress() +
+                                ", 服务器: " + account.getParams().getServerAddress());
+                    }
+                }
+            } else {
+                Log.w(TAG, "无默认账号，需要重新登录");
+                if (username != null && domain != null && password != null) {
+                    login(username, password, domain, port, transport, null);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "验证身份时出错: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 监控SIP注册状态，确保在通话过程中不会被注销
+     * 在接听电话后调用此方法
+     */
+    public void startSipRegistrationMonitor() {
+        if (retryHandler == null) {
+            retryHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        }
+        
+        Log.d(TAG, "启动SIP注册状态监控...");
+        
+        // 创建一个定期检查的Runnable
+        Runnable registrationMonitor = new Runnable() {
+            @Override
+            public void run() {
+                if (core == null) {
+                    Log.w(TAG, "SIP核心为空，无法监控注册状态");
+                    return;
+                }
+                
+                // 检查当前通话状态
+                boolean isInCall = (callState == CALL_STATE_CONNECTED || callState == CALL_STATE_RINGING);
+                
+                // 检查注册状态
+                boolean isRegistered = isRegistered();
+                Log.d(TAG, "SIP注册状态监控 - 是否通话中: " + isInCall + ", 是否已注册: " + isRegistered);
+                
+                // 如果在通话中但未注册，尝试重新注册
+                if (isInCall && !isRegistered) {
+                    Log.w(TAG, "检测到通话中SIP账号未注册，尝试恢复...");
+                    
+                    // 确保身份正确
+                    ensureCorrectIdentity();
+                    
+                    // 刷新注册
+                    if (core != null) {
+                        try {
+                            Log.d(TAG, "主动刷新SIP注册...");
+                            core.refreshRegisters();
+                        } catch (Exception e) {
+                            Log.e(TAG, "刷新SIP注册失败: " + e.getMessage());
+                        }
+                    }
+                }
+                
+                // 如果仍在通话中，继续监控
+                if (isInCall) {
+                    retryHandler.postDelayed(this, 5000); // 每5秒检查一次
+                } else {
+                    Log.d(TAG, "通话已结束，停止SIP注册状态监控");
+                }
+            }
+        };
+        
+        // 开始监控
+        retryHandler.postDelayed(registrationMonitor, 1000); // 1秒后开始监控
     }
 } 

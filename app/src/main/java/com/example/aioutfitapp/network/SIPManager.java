@@ -13,9 +13,14 @@ import android.os.Build;
 import android.util.Log;
 
 /**
- * SIP协议管理器
+ * SIP协议管理器 - 已禁用
  * 
- * 负责管理SIP协议的注册、会话创建、应答和终止等功能
+ * 此类已被禁用，因为它使用的是Android原生SIP系统，与Linphone系统冲突。
+ * 所有SIP通话功能现在完全由Linphone SDK处理。
+ * 
+ * 此类保留仅作为参考，但不再被应用程序使用。
+ * 
+ * 原功能：负责管理SIP协议的注册、会话创建、应答和终止等功能
  * 集成了Android原生SIP API
  */
 public class SIPManager {
@@ -54,11 +59,14 @@ public class SIPManager {
     
     /**
      * 获取单例实例
+     * 
+     * 注意：此方法仍可被调用，但实际上此类已被禁用，所有SIP功能由Linphone处理
      */
     public static synchronized SIPManager getInstance(Context context) {
         if (instance == null) {
             instance = new SIPManager(context);
         }
+        Log.w(TAG, "警告：尝试使用已禁用的Android原生SIP管理器。所有SIP功能应使用LinphoneManager");
         return instance;
     }
     
@@ -71,6 +79,8 @@ public class SIPManager {
     
     /**
      * 初始化SIP管理器（使用提供的账号信息）
+     * 
+     * 注意：此方法已被禁用，不会实际初始化SIP
      */
     public boolean initialize(String username, String domain, String password, SIPStateListener listener) {
         this.username = username;
@@ -78,11 +88,17 @@ public class SIPManager {
         this.password = password;
         this.sipStateListener = listener;
         
-        return initializeSIP();
+        Log.w(TAG, "警告：尝试初始化已禁用的Android原生SIP管理器。请使用LinphoneManager");
+        if (sipStateListener != null) {
+            sipStateListener.onError("Android原生SIP已禁用，请使用LinphoneManager");
+        }
+        return false;
     }
     
     /**
      * 初始化SIP管理器（使用默认测试账号）
+     * 
+     * 注意：此方法已被禁用，不会实际初始化SIP
      */
     public boolean initialize(SIPStateListener listener) {
         this.username = DEFAULT_USERNAME;
@@ -90,8 +106,11 @@ public class SIPManager {
         this.password = DEFAULT_PASSWORD;
         this.sipStateListener = listener;
         
-        Log.d(TAG, "使用默认测试账号: " + username + "@" + domain);
-        return initializeSIP();
+        Log.w(TAG, "警告：尝试初始化已禁用的Android原生SIP管理器。请使用LinphoneManager");
+        if (sipStateListener != null) {
+            sipStateListener.onError("Android原生SIP已禁用，请使用LinphoneManager");
+        }
+        return false;
     }
     
     /**
